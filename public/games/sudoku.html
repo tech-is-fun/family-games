@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku - Family Games</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h1><a href="/home.html" style="text-decoration: none; color: inherit;">Family Games</a></h1>
+        <div class="user-info">
+            <span class="username" id="username"></span>
+            <button class="btn btn-secondary" id="logout-btn">Logout</button>
+        </div>
+    </nav>
+
+    <div class="sudoku-container">
+        <h2 style="text-align: center; margin-bottom: 1rem;">Sudoku</h2>
+
+        <div class="stats-panel">
+            <h3>Your Stats</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="value" id="stat-played">0</div>
+                    <div class="label">Played</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value" id="stat-won">0</div>
+                    <div class="label">Won</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value" id="stat-win-pct">0%</div>
+                    <div class="label">Win %</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value" id="stat-best">-</div>
+                    <div class="label">Best Time</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sudoku-controls">
+            <select id="difficulty" class="btn btn-secondary">
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+            </select>
+            <button class="btn btn-primary" id="new-game-btn">New Game</button>
+            <button class="btn btn-secondary" id="hint-btn">Hint</button>
+            <button class="btn btn-secondary" id="check-btn">Check</button>
+        </div>
+
+        <div class="sudoku-board" id="board">
+            <!-- 81 cells will be generated -->
+        </div>
+
+        <div class="number-pad" id="number-pad">
+            <button data-num="1">1</button>
+            <button data-num="2">2</button>
+            <button data-num="3">3</button>
+            <button data-num="4">4</button>
+            <button data-num="5">5</button>
+            <button data-num="6">6</button>
+            <button data-num="7">7</button>
+            <button data-num="8">8</button>
+            <button data-num="9">9</button>
+            <button data-num="0">Clear</button>
+        </div>
+
+        <p style="text-align: center; margin-top: 1rem; color: var(--gray-600);">
+            Time: <span id="timer">0:00</span>
+        </p>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal" id="game-modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Congratulations!</h2>
+            <p id="modal-message"></p>
+            <button class="btn btn-primary" id="play-again-btn">Play Again</button>
+        </div>
+    </div>
+
+    <script src="/js/games/sudoku.js"></script>
+</body>
+</html>

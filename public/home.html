@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Games - Home</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h1>Family Games</h1>
+        <div class="user-info">
+            <span class="username" id="username"></span>
+            <button class="btn btn-secondary" id="logout-btn">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>Choose a Game</h2>
+
+        <div class="games-grid">
+            <a href="/games/wordle.html" class="game-card">
+                <h3>Wordle</h3>
+                <p>Guess the 5-letter word in 6 tries</p>
+                <div class="stats" id="wordle-stats">
+                    <span>Loading...</span>
+                </div>
+            </a>
+
+            <a href="/games/sudoku.html" class="game-card">
+                <h3>Sudoku</h3>
+                <p>Fill the grid with numbers 1-9</p>
+                <div class="stats" id="sudoku-stats">
+                    <span>Loading...</span>
+                </div>
+            </a>
+        </div>
+
+        <div class="leaderboard" id="leaderboard">
+            <h3>Family Leaderboard</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Wordle Wins</th>
+                        <th>Sudoku Wins</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                    <tr><td colspan="3">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="/js/home.js"></script>
+</body>
+</html>

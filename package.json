@@ -1,0 +1,21 @@
+{
+  "name": "family-games",
+  "version": "1.0.0",
+  "description": "A family game site with Wordle and Sudoku",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "keywords": ["games", "wordle", "sudoku", "family"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "connect-pg-simple": "^9.0.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-session": "^1.18.0",
+    "pg": "^8.12.0"
+  }
+}

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle - Family Games</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h1><a href="/home.html" style="text-decoration: none; color: inherit;">Family Games</a></h1>
+        <div class="user-info">
+            <span class="username" id="username"></span>
+            <button class="btn btn-secondary" id="logout-btn">Logout</button>
+        </div>
+    </nav>
+
+    <div class="wordle-container">
+        <h2 style="text-align: center; margin-bottom: 1rem;">Wordle</h2>
+
+        <div class="stats-panel">
+            <h3>Your Stats</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="value" id="stat-played">0</div>
+                    <div class="label">Played</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value" id="stat-win-pct">0%</div>
+                    <div class="label">Win %</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value" id="stat-streak">0</div>
+                    <div class="label">Streak</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value" id="stat-best">0</div>
+                    <div class="label">Best</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="wordle-board" id="board">
+            <!-- 6 rows of 5 cells each -->
+        </div>
+
+        <div class="keyboard" id="keyboard">
+            <div class="keyboard-row">
+                <button class="key" data-key="q">q</button>
+                <button class="key" data-key="w">w</button>
+                <button class="key" data-key="e">e</button>
+                <button class="key" data-key="r">r</button>
+                <button class="key" data-key="t">t</button>
+                <button class="key" data-key="y">y</button>
+                <button class="key" data-key="u">u</button>
+                <button class="key" data-key="i">i</button>
+                <button class="key" data-key="o">o</button>
+                <button class="key" data-key="p">p</button>
+            </div>
+            <div class="keyboard-row">
+                <button class="key" data-key="a">a</button>
+                <button class="key" data-key="s">s</button>
+                <button class="key" data-key="d">d</button>
+                <button class="key" data-key="f">f</button>
+                <button class="key" data-key="g">g</button>
+                <button class="key" data-key="h">h</button>
+                <button class="key" data-key="j">j</button>
+                <button class="key" data-key="k">k</button>
+                <button class="key" data-key="l">l</button>
+            </div>
+            <div class="keyboard-row">
+                <button class="key wide" data-key="Enter">Enter</button>
+                <button class="key" data-key="z">z</button>
+                <button class="key" data-key="x">x</button>
+                <button class="key" data-key="c">c</button>
+                <button class="key" data-key="v">v</button>
+                <button class="key" data-key="b">b</button>
+                <button class="key" data-key="n">n</button>
+                <button class="key" data-key="m">m</button>
+                <button class="key wide" data-key="Backspace">Del</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal" id="game-modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Game Over</h2>
+            <p id="modal-message"></p>
+            <button class="btn btn-primary" id="play-again-btn">Play Again</button>
+        </div>
+    </div>
+
+    <script src="/js/games/wordle.js"></script>
+</body>
+</html>
