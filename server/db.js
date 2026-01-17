@@ -166,6 +166,34 @@ async function getLeaderboard(gameName, limit = 10) {
     return result.rows;
 }
 
+// Get user's wordle result for a specific date
+async function getDailyWordleResult(userId, date) {
+    const result = await pool.query(
+        `SELECT * FROM game_results
+         WHERE user_id = $1
+         AND game_name = 'wordle'
+         AND details->>'date' = $2
+         ORDER BY played_at DESC
+         LIMIT 1`,
+        [userId, date]
+    );
+    return result.rows[0];
+}
+
+// Get all family wordle results for a specific date
+async function getFamilyWordleResults(date) {
+    const result = await pool.query(
+        `SELECT gr.*, u.username
+         FROM game_results gr
+         JOIN users u ON gr.user_id = u.id
+         WHERE gr.game_name = 'wordle'
+         AND gr.details->>'date' = $1
+         ORDER BY gr.played_at ASC`,
+        [date]
+    );
+    return result.rows;
+}
+
 module.exports = {
     pool,
     initializeDatabase,
@@ -177,5 +205,7 @@ module.exports = {
     updateGameStats,
     saveGameResult,
     getGameHistory,
-    getLeaderboard
+    getLeaderboard,
+    getDailyWordleResult,
+    getFamilyWordleResults
 };

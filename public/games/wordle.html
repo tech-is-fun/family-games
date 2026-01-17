@@ -16,29 +16,7 @@
     </nav>
 
     <div class="wordle-container">
-        <h2 style="text-align: center; margin-bottom: 1rem;">Wordle</h2>
-
-        <div class="stats-panel">
-            <h3>Your Stats</h3>
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="value" id="stat-played">0</div>
-                    <div class="label">Played</div>
-                </div>
-                <div class="stat-item">
-                    <div class="value" id="stat-win-pct">0%</div>
-                    <div class="label">Win %</div>
-                </div>
-                <div class="stat-item">
-                    <div class="value" id="stat-streak">0</div>
-                    <div class="label">Streak</div>
-                </div>
-                <div class="stat-item">
-                    <div class="value" id="stat-best">0</div>
-                    <div class="label">Best</div>
-                </div>
-            </div>
-        </div>
+        <div class="wordle-message" id="message"></div>
 
         <div class="wordle-board" id="board">
             <!-- 6 rows of 5 cells each -->
@@ -80,6 +58,11 @@
                 <button class="key wide" data-key="Backspace">Del</button>
             </div>
         </div>
+
+        <div id="arena-link" class="arena-link" style="display: none;">
+            <a href="/games/wordle-arena.html">Family Wordle Arena &rarr;</a>
+            <p>See how your family did!</p>
+        </div>
     </div>
 
     <!-- Game Over Modal -->
@@ -87,7 +70,8 @@
         <div class="modal-content">
             <h2 id="modal-title">Game Over</h2>
             <p id="modal-message"></p>
-            <button class="btn btn-primary" id="play-again-btn">Play Again</button>
+            <a href="/games/wordle-arena.html" class="btn btn-primary" style="display: inline-block; text-decoration: none;">See Family Results</a>
+            <button class="btn btn-secondary" id="close-modal-btn" style="margin-top: 0.5rem;">Close</button>
         </div>
     </div>
 

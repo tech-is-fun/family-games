@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Wordle Arena - Family Games</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .arena-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .date-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .date-nav button {
+            padding: 0.5rem 1rem;
+        }
+
+        .date-nav .current-date {
+            font-size: 1.25rem;
+            font-weight: 600;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .target-word {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .target-word .word {
+            font-size: 2rem;
+            font-weight: bold;
+            letter-spacing: 0.5rem;
+            color: var(--primary);
+        }
+
+        .family-results {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .player-result {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .player-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .player-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+
+        .player-status.won {
+            background: var(--success);
+            color: white;
+        }
+
+        .player-status.lost {
+            background: var(--danger);
+            color: white;
+        }
+
+        .mini-board {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-width: 200px;
+        }
+
+        .mini-row {
+            display: flex;
+            gap: 4px;
+        }
+
+        .mini-cell {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.875rem;
+            font-weight: bold;
+            border: 1px solid var(--gray-300);
+            text-transform: uppercase;
+        }
+
+        .mini-cell.correct {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .mini-cell.present {
+            background: var(--warning);
+            border-color: var(--warning);
+            color: white;
+        }
+
+        .mini-cell.absent {
+            background: var(--gray-600);
+            border-color: var(--gray-600);
+            color: white;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray-600);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .locked-message {
+            text-align: center;
+            padding: 3rem;
+            background: var(--white);
+            border-radius: 8px;
+            margin-top: 2rem;
+        }
+
+        .locked-message h3 {
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1><a href="/home.html" style="text-decoration: none; color: inherit;">Family Games</a></h1>
+        <div class="user-info">
+            <span class="username" id="username"></span>
+            <button class="btn btn-secondary" id="logout-btn">Logout</button>
+        </div>
+    </nav>
+
+    <div class="arena-container">
+        <a href="/games/wordle.html" class="back-link">&larr; Back to Wordle</a>
+
+        <h2 style="text-align: center; margin-bottom: 1rem;">Family Wordle Arena</h2>
+
+        <div class="date-nav">
+            <button class="btn btn-secondary" id="prev-day">&larr; Previous</button>
+            <span class="current-date" id="current-date"></span>
+            <button class="btn btn-secondary" id="next-day">Next &rarr;</button>
+        </div>
+
+        <div id="content">
+            <div class="target-word" id="target-word-section" style="display: none;">
+                <p>Today's word:</p>
+                <p class="word" id="target-word"></p>
+            </div>
+
+            <div class="family-results" id="family-results"></div>
+        </div>
+    </div>
+
+    <script src="/js/games/wordle-arena.js"></script>
+</body>
+</html>

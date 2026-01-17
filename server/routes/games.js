@@ -6,7 +6,9 @@ const {
     updateGameStats,
     saveGameResult,
     getGameHistory,
-    getLeaderboard
+    getLeaderboard,
+    getDailyWordleResult,
+    getFamilyWordleResults
 } = require('../db');
 
 const router = express.Router();
@@ -76,6 +78,64 @@ router.get('/leaderboard/:game', async (req, res) => {
     } catch (err) {
         console.error('Get leaderboard error:', err);
         res.status(500).json({ error: 'Failed to get leaderboard' });
+    }
+});
+
+// Get user's daily wordle status
+router.get('/wordle/daily', requireAuth, async (req, res) => {
+    try {
+        const { date } = req.query;
+        if (!date) {
+            return res.status(400).json({ error: 'Date is required' });
+        }
+
+        const result = await getDailyWordleResult(req.session.userId, date);
+        if (result) {
+            res.json({
+                completed: true,
+                won: result.won,
+                guesses: result.details?.guesses || [],
+                score: result.score
+            });
+        } else {
+            res.json({ completed: false });
+        }
+    } catch (err) {
+        console.error('Get daily wordle error:', err);
+        res.status(500).json({ error: 'Failed to get daily wordle status' });
+    }
+});
+
+// Get family wordle arena results
+router.get('/wordle/arena', requireAuth, async (req, res) => {
+    try {
+        const { date } = req.query;
+        if (!date) {
+            return res.status(400).json({ error: 'Date is required' });
+        }
+
+        // Check if user has completed this day's puzzle
+        const userResult = await getDailyWordleResult(req.session.userId, date);
+        if (!userResult) {
+            return res.status(403).json({ error: 'Complete today\'s puzzle first to see family results' });
+        }
+
+        // Get all family results for this date
+        const results = await getFamilyWordleResults(date);
+
+        res.json({
+            results: results.map(r => ({
+                username: r.username,
+                won: r.won,
+                guesses: r.details?.guesses || [],
+                score: r.score,
+                playedAt: r.played_at
+            })),
+            targetWord: userResult.details?.targetWord
+        });
+    } catch (err) {
+        console.error('Get arena results error:', err);
+        res.status(500).json({ error: 'Failed to get arena results' });
     }
 });
 

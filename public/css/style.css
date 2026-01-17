@@ -235,6 +235,48 @@ body {
     padding: 1rem;
 }
 
+.wordle-message {
+    text-align: center;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    min-height: 2rem;
+    font-weight: 500;
+}
+
+.wordle-message.error {
+    color: var(--danger);
+}
+
+.wordle-message.valid {
+    color: var(--success);
+}
+
+.arena-link {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: var(--white);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.arena-link a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.arena-link a:hover {
+    text-decoration: underline;
+}
+
+.arena-link p {
+    color: var(--gray-600);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
 .wordle-board {
     display: grid;
     grid-template-rows: repeat(6, 1fr);
@@ -518,25 +560,86 @@ body {
 
 /* Responsive */
 @media (max-width: 600px) {
+    .navbar {
+        padding: 0.75rem 1rem;
+    }
+
+    .navbar h1 {
+        font-size: 1.2rem;
+    }
+
+    /* Wordle mobile */
+    .wordle-container {
+        padding: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 60px);
+    }
+
+    .wordle-board {
+        flex: 1;
+        max-height: 350px;
+        margin-bottom: 1rem;
+    }
+
     .wordle-cell {
-        font-size: 1.5rem;
+        font-size: 1.75rem;
+    }
+
+    .keyboard {
+        padding-bottom: 0.5rem;
+    }
+
+    .keyboard-row {
+        gap: 4px;
     }
 
     .key {
-        padding: 12px 8px;
-        min-width: 30px;
-        font-size: 0.875rem;
+        padding: 14px 6px;
+        min-width: 8.5vw;
+        font-size: 0.9rem;
+        border-radius: 6px;
     }
 
     .key.wide {
-        min-width: 50px;
+        min-width: 13vw;
+        font-size: 0.7rem;
     }
 
+    .wordle-message {
+        min-height: 1.5rem;
+        padding: 0.25rem;
+        font-size: 0.9rem;
+    }
+
+    .arena-link {
+        margin-top: 0.75rem;
+        padding: 0.75rem;
+    }
+
+    .arena-link a {
+        font-size: 1rem;
+    }
+
+    .arena-link p {
+        font-size: 0.75rem;
+    }
+
+    /* Sudoku mobile */
     .sudoku-cell {
         font-size: 1rem;
     }
 
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* General mobile */
+    .container {
+        padding: 1rem;
+    }
+
+    .game-card {
+        padding: 1rem;
     }
 }
