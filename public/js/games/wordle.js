@@ -586,6 +586,143 @@ function initBoard() {
     }
 }
 
+// Starter word modal elements
+const starterModal = document.getElementById('starter-modal');
+const suggestionButtons = document.getElementById('suggestion-buttons');
+const customStarterInput = document.getElementById('custom-starter-input');
+const customStarterBtn = document.getElementById('custom-starter-btn');
+const starterError = document.getElementById('starter-error');
+
+// Flag to prevent double submission
+let isSelectingStarter = false;
+
+// Check and handle starter word
+async function checkStarterWord() {
+    try {
+        const res = await fetch('/api/games/wordle/starter');
+        if (!res.ok) return null;
+        return await res.json();
+    } catch (err) {
+        console.error('Failed to check starter word:', err);
+        return null;
+    }
+}
+
+// Show starter word selection modal
+function showStarterModal(suggestions) {
+    isSelectingStarter = false;
+    suggestionButtons.innerHTML = '';
+    suggestions.forEach(word => {
+        const btn = document.createElement('button');
+        btn.className = 'suggestion-btn';
+        btn.textContent = word;
+        btn.addEventListener('click', () => selectStarterWord(word));
+        suggestionButtons.appendChild(btn);
+    });
+    starterModal.classList.add('show');
+}
+
+// Select a starter word (from suggestions or custom)
+async function selectStarterWord(word) {
+    // Prevent double-clicks
+    if (isSelectingStarter) return;
+    isSelectingStarter = true;
+
+    word = word.toUpperCase().trim();
+
+    if (word.length !== 5) {
+        showStarterError('Word must be exactly 5 letters');
+        isSelectingStarter = false;
+        return;
+    }
+
+    if (!VALID_WORDS.has(word.toLowerCase())) {
+        showStarterError('Not a valid word');
+        isSelectingStarter = false;
+        return;
+    }
+
+    // Disable all suggestion buttons while processing
+    document.querySelectorAll('.suggestion-btn').forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+    });
+    customStarterBtn.disabled = true;
+
+    try {
+        const res = await fetch('/api/games/wordle/starter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ word })
+        });
+
+        const data = await res.json();
+
+        if (data.success || data.alreadySet) {
+            starterModal.classList.remove('show');
+            // Small delay to ensure modal is hidden and DOM is ready
+            setTimeout(() => {
+                applyStarterWord(data.word);
+            }, 100);
+        } else if (data.error) {
+            showStarterError(data.error);
+            isSelectingStarter = false;
+            // Re-enable buttons
+            document.querySelectorAll('.suggestion-btn').forEach(btn => {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            });
+            customStarterBtn.disabled = false;
+        }
+    } catch (err) {
+        console.error('Failed to set starter word:', err);
+        showStarterError('Failed to set starter word');
+        isSelectingStarter = false;
+        // Re-enable buttons
+        document.querySelectorAll('.suggestion-btn').forEach(btn => {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+        });
+        customStarterBtn.disabled = false;
+    }
+}
+
+// Show error in starter modal
+function showStarterError(message) {
+    starterError.textContent = message;
+    starterError.style.display = 'block';
+    setTimeout(() => {
+        starterError.style.display = 'none';
+    }, 3000);
+}
+
+// Apply starter word as first guess
+function applyStarterWord(word) {
+    if (!word || word.length !== 5) {
+        console.error('Invalid starter word:', word);
+        return;
+    }
+
+    // Ensure we're at the start of the game
+    currentRow = 0;
+    currentCol = 0;
+
+    // Fill in the first row with the starter word
+    for (let i = 0; i < 5; i++) {
+        const cell = document.getElementById(`cell-0-${i}`);
+        if (!cell) {
+            console.error('Cell not found:', `cell-0-${i}`);
+            return;
+        }
+        cell.textContent = word[i];
+        cell.classList.add('filled');
+    }
+    currentCol = 5;
+
+    // Auto-submit the starter word
+    submitGuess();
+}
+
 // Start new game (daily)
 async function startGame() {
     // Fetch word from server (ensures consistent daily word)
@@ -609,6 +746,21 @@ async function startGame() {
     if (!alreadyDone) {
         initBoard();
         showMessage('');
+
+        // Check for starter word
+        const starterData = await checkStarterWord();
+        if (starterData) {
+            if (starterData.hasStarter) {
+                // Apply existing starter word
+                showMessage(`Starter word by ${starterData.chosenBy}: ${starterData.word}`, 'valid');
+                setTimeout(() => {
+                    applyStarterWord(starterData.word);
+                }, 500);
+            } else {
+                // Show modal to pick starter word
+                showStarterModal(starterData.suggestions);
+            }
+        }
     }
 
     updateArenaLink();
@@ -760,6 +912,17 @@ document.getElementById('close-modal-btn').addEventListener('click', () => {
 document.getElementById('logout-btn').addEventListener('click', async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/';
+});
+
+// Starter word custom input handlers
+customStarterBtn.addEventListener('click', () => {
+    selectStarterWord(customStarterInput.value);
+});
+
+customStarterInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        selectStarterWord(customStarterInput.value);
+    }
 });
 
 // Initialize

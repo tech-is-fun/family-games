@@ -13,7 +13,10 @@ const {
     getFamilyWordSaladResults,
     upsertWordSaladResult,
     getDailyPhotoMysteryResult,
-    getFamilyPhotoMysteryResults
+    getFamilyPhotoMysteryResults,
+    getStarterWord,
+    setStarterWord,
+    getRecentStarterWords
 } = require('../db');
 
 // Load photo puzzles and wordle words
@@ -123,6 +126,86 @@ router.get('/wordle/word', requireAuth, (req, res) => {
     const date = getUTCDateString();
     const word = getDailyWordleWord(date);
     res.json({ date, word });
+});
+
+// Get starter word for today
+router.get('/wordle/starter', requireAuth, async (req, res) => {
+    try {
+        const date = getUTCDateString();
+        const starter = await getStarterWord(date);
+
+        if (starter) {
+            res.json({
+                hasStarter: true,
+                word: starter.word.toUpperCase(),
+                chosenBy: starter.chosen_by_username,
+                date
+            });
+        } else {
+            // No starter word yet - provide suggestions
+            const recentWords = await getRecentStarterWords(7);
+            const recentSet = new Set(recentWords.map(w => w.toLowerCase()));
+
+            // Get 5 random suggestions from word list, excluding recent starters
+            const suggestions = [];
+            const shuffled = [...wordleWords].sort(() => Math.random() - 0.5);
+            for (const word of shuffled) {
+                if (!recentSet.has(word.toLowerCase()) && suggestions.length < 5) {
+                    suggestions.push(word.toUpperCase());
+                }
+                if (suggestions.length >= 5) break;
+            }
+
+            res.json({
+                hasStarter: false,
+                suggestions,
+                date
+            });
+        }
+    } catch (err) {
+        console.error('Get starter word error:', err);
+        res.status(500).json({ error: 'Failed to get starter word' });
+    }
+});
+
+// Set starter word for today
+router.post('/wordle/starter', requireAuth, async (req, res) => {
+    try {
+        const { word } = req.body;
+        const date = getUTCDateString();
+
+        if (!word || word.length !== 5) {
+            return res.status(400).json({ error: 'Word must be exactly 5 letters' });
+        }
+
+        // Check if word is valid
+        if (!wordleWords.includes(word.toLowerCase())) {
+            return res.status(400).json({ error: 'Not a valid word' });
+        }
+
+        // Try to set the starter word (will fail if one already exists)
+        const result = await setStarterWord(date, word, req.session.userId);
+
+        if (result) {
+            res.json({
+                success: true,
+                word: result.word.toUpperCase(),
+                date
+            });
+        } else {
+            // Someone else already set it
+            const existing = await getStarterWord(date);
+            res.json({
+                success: false,
+                alreadySet: true,
+                word: existing.word.toUpperCase(),
+                chosenBy: existing.chosen_by_username
+            });
+        }
+    } catch (err) {
+        console.error('Set starter word error:', err);
+        res.status(500).json({ error: 'Failed to set starter word' });
+    }
 });
 
 // Get user's daily wordle status

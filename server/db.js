@@ -59,6 +59,17 @@ async function initializeDatabase() {
             )
         `);
 
+        // Create wordle starter words table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS wordle_starter_words (
+                id SERIAL PRIMARY KEY,
+                date DATE UNIQUE NOT NULL,
+                word VARCHAR(5) NOT NULL,
+                chosen_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         console.log('Database tables initialized');
     } finally {
         client.release();
@@ -289,6 +300,39 @@ async function getFamilyPhotoMysteryResults(date) {
     return result.rows;
 }
 
+// Wordle starter word functions
+async function getStarterWord(date) {
+    const result = await pool.query(
+        `SELECT wsw.*, u.username as chosen_by_username
+         FROM wordle_starter_words wsw
+         LEFT JOIN users u ON wsw.chosen_by = u.id
+         WHERE wsw.date = $1`,
+        [date]
+    );
+    return result.rows[0];
+}
+
+async function setStarterWord(date, word, userId) {
+    const result = await pool.query(
+        `INSERT INTO wordle_starter_words (date, word, chosen_by)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (date) DO NOTHING
+         RETURNING *`,
+        [date, word.toLowerCase(), userId]
+    );
+    return result.rows[0];
+}
+
+async function getRecentStarterWords(days = 7) {
+    const result = await pool.query(
+        `SELECT word FROM wordle_starter_words
+         WHERE date >= CURRENT_DATE - $1::integer
+         ORDER BY date DESC`,
+        [days]
+    );
+    return result.rows.map(r => r.word);
+}
+
 // Password reset functions
 async function createPasswordResetToken(userId, token, expiresAt) {
     // Invalidate any existing tokens for this user
@@ -350,6 +394,9 @@ module.exports = {
     upsertWordSaladResult,
     getDailyPhotoMysteryResult,
     getFamilyPhotoMysteryResults,
+    getStarterWord,
+    setStarterWord,
+    getRecentStarterWords,
     createPasswordResetToken,
     getPasswordResetToken,
     markTokenAsUsed,

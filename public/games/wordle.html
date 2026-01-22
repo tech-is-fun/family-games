@@ -65,6 +65,30 @@
         </div>
     </div>
 
+    <!-- Starter Word Modal -->
+    <div class="modal" id="starter-modal">
+        <div class="modal-content">
+            <h2>Pick Today's Starter Word</h2>
+            <p>You're the first family member to play today! Choose a starter word that everyone will use as their first guess.</p>
+
+            <div class="starter-suggestions" id="starter-suggestions">
+                <p style="margin-bottom: 0.5rem; font-weight: 500;">Choose a suggested word:</p>
+                <div class="suggestion-buttons" id="suggestion-buttons">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+
+            <div class="starter-custom" style="margin-top: 1rem;">
+                <p style="margin-bottom: 0.5rem; font-weight: 500;">Or enter your own:</p>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="custom-starter-input" maxlength="5" placeholder="5-letter word" style="flex: 1; padding: 0.5rem; font-size: 1rem; text-transform: uppercase;">
+                    <button class="btn btn-primary" id="custom-starter-btn">Use</button>
+                </div>
+                <p class="starter-error" id="starter-error" style="color: var(--danger); font-size: 0.875rem; margin-top: 0.5rem; display: none;"></p>
+            </div>
+        </div>
+    </div>
+
     <!-- Game Over Modal -->
     <div class="modal" id="game-modal">
         <div class="modal-content">
