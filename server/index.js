@@ -10,6 +10,11 @@ const apiRouter = require('./routes/api');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy for Render/Heroku (required for secure cookies behind reverse proxy)
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -27,6 +32,7 @@ app.use(session({
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
+        sameSite: 'lax',
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     }
 }));
