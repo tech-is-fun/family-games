@@ -331,15 +331,28 @@ async function loadProgress() {
         const res = await fetch(`/api/games/word-salad/daily?date=${todayDate}`);
         if (res.ok) {
             const data = await res.json();
-            if (data.result) {
-                foundWords = data.result.details.words || [];
-                score = data.result.details.score || 0;
+            if (data.result && data.result.details) {
+                // Handle both string and object formats
+                let details = data.result.details;
+                if (typeof details === 'string') {
+                    try {
+                        details = JSON.parse(details);
+                    } catch (e) {
+                        console.error('Failed to parse details:', e);
+                        return;
+                    }
+                }
+
+                foundWords = details.words || [];
+                score = details.score || 0;
                 document.getElementById('score').textContent = score;
                 document.getElementById('words-count').textContent = foundWords.length;
                 renderFoundWords();
 
-                // Show arena link
-                document.getElementById('arena-link').style.display = 'block';
+                // Show arena link if any words found
+                if (foundWords.length > 0) {
+                    document.getElementById('arena-link').style.display = 'block';
+                }
             }
         }
     } catch (err) {
