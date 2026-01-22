@@ -397,14 +397,14 @@ let guesses = [];
 let todayCompleted = false;
 let todayDate = '';
 
-// Get today's date string (YYYY-MM-DD)
+// Get today's date string (YYYY-MM-DD) - used as fallback
 function getTodayDate() {
     const now = new Date();
     return now.toISOString().split('T')[0];
 }
 
-// Get daily word based on date (deterministic)
-function getDailyWord(dateStr) {
+// Get daily word based on date (deterministic) - used as fallback
+function getDailyWordFallback(dateStr) {
     // Simple hash function to get consistent index from date
     let hash = 0;
     for (let i = 0; i < dateStr.length; i++) {
@@ -413,6 +413,22 @@ function getDailyWord(dateStr) {
     }
     const index = Math.abs(hash) % WORDS.length;
     return WORDS[index].toUpperCase();
+}
+
+// Fetch daily word from server (ensures consistent word across all users)
+async function fetchDailyWord() {
+    try {
+        const res = await fetch('/api/games/wordle/word');
+        if (res.ok) {
+            const data = await res.json();
+            return { date: data.date, word: data.word };
+        }
+    } catch (err) {
+        console.error('Failed to fetch daily word from server:', err);
+    }
+    // Fallback to client-side calculation if server fails
+    const date = getTodayDate();
+    return { date, word: getDailyWordFallback(date) };
 }
 
 // DOM elements
@@ -572,8 +588,11 @@ function initBoard() {
 
 // Start new game (daily)
 async function startGame() {
-    todayDate = getTodayDate();
-    targetWord = getDailyWord(todayDate);
+    // Fetch word from server (ensures consistent daily word)
+    const dailyData = await fetchDailyWord();
+    todayDate = dailyData.date;
+    targetWord = dailyData.word;
+
     currentRow = 0;
     currentCol = 0;
     gameOver = false;

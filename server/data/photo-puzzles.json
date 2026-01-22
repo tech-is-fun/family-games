@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "imageUrl": "https://images.unsplash.com/photo-1511739001486-6bfe10ce65f4?w=800",
+    "answer": "Eiffel Tower",
+    "acceptedAnswers": ["eiffel tower", "the eiffel tower", "tour eiffel", "eiffel"],
+    "category": "Landmark",
+    "hint": "Iconic Parisian structure"
+  },
+  {
+    "id": 2,
+    "imageUrl": "https://images.unsplash.com/photo-1474511320723-9a56873571b7?w=800",
+    "answer": "Statue of Liberty",
+    "acceptedAnswers": ["statue of liberty", "the statue of liberty", "liberty statue", "lady liberty"],
+    "category": "Landmark",
+    "hint": "Gift from France to America"
+  },
+  {
+    "id": 3,
+    "imageUrl": "https://images.unsplash.com/photo-1486299267070-83823f5448dd?w=800",
+    "answer": "Big Ben",
+    "acceptedAnswers": ["big ben", "elizabeth tower", "clock tower london"],
+    "category": "Landmark",
+    "hint": "Famous London clock"
+  },
+  {
+    "id": 4,
+    "imageUrl": "https://images.unsplash.com/photo-1550581190-9c1c48d21d6c?w=800",
+    "answer": "Light Bulb",
+    "acceptedAnswers": ["light bulb", "lightbulb", "bulb", "lamp bulb"],
+    "category": "Object",
+    "hint": "Edison's famous invention"
+  },
+  {
+    "id": 5,
+    "imageUrl": "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=800",
+    "answer": "Guitar",
+    "acceptedAnswers": ["guitar", "acoustic guitar", "electric guitar"],
+    "category": "Object",
+    "hint": "Six-stringed musical instrument"
+  },
+  {
+    "id": 6,
+    "imageUrl": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800",
+    "answer": "Coffee Cup",
+    "acceptedAnswers": ["coffee cup", "coffee mug", "cup of coffee", "coffee", "mug"],
+    "category": "Object",
+    "hint": "Morning beverage container"
+  },
+  {
+    "id": 7,
+    "imageUrl": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=800",
+    "answer": "Earth",
+    "acceptedAnswers": ["earth", "the earth", "planet earth", "our planet"],
+    "category": "Space",
+    "hint": "Our home planet from space"
+  },
+  {
+    "id": 8,
+    "imageUrl": "https://images.unsplash.com/photo-1564349683136-77e08dba1ef7?w=800",
+    "answer": "Panda",
+    "acceptedAnswers": ["panda", "giant panda", "panda bear"],
+    "category": "Animal",
+    "hint": "Black and white bear from China"
+  },
+  {
+    "id": 9,
+    "imageUrl": "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800",
+    "answer": "Dog",
+    "acceptedAnswers": ["dog", "puppy", "golden retriever", "retriever"],
+    "category": "Animal",
+    "hint": "Man's best friend"
+  },
+  {
+    "id": 10,
+    "imageUrl": "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?w=800",
+    "answer": "Sunflower",
+    "acceptedAnswers": ["sunflower", "sun flower", "sunflowers"],
+    "category": "Nature",
+    "hint": "Yellow flower that follows the sun"
+  }
+]

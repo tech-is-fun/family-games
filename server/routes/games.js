@@ -11,8 +11,42 @@ const {
     getFamilyWordleResults,
     getDailyWordSaladResult,
     getFamilyWordSaladResults,
-    upsertWordSaladResult
+    upsertWordSaladResult,
+    getDailyPhotoMysteryResult,
+    getFamilyPhotoMysteryResults
 } = require('../db');
+
+// Load photo puzzles and wordle words
+const photoPuzzles = require('../data/photo-puzzles.json');
+const wordleWords = require('../data/wordle-words.json');
+
+// Hash function for daily puzzle selection
+function hashDate(dateStr) {
+    let hash = 0;
+    for (let i = 0; i < dateStr.length; i++) {
+        hash = ((hash << 5) - hash) + dateStr.charCodeAt(i);
+        hash = hash & hash;
+    }
+    return Math.abs(hash);
+}
+
+// Get daily photo puzzle based on date
+function getDailyPhotoPuzzle(dateStr) {
+    const index = hashDate(dateStr) % photoPuzzles.length;
+    return photoPuzzles[index];
+}
+
+// Get daily wordle word based on date (uses UTC for consistency)
+function getDailyWordleWord(dateStr) {
+    const index = hashDate(dateStr) % wordleWords.length;
+    return wordleWords[index].toUpperCase();
+}
+
+// Get current UTC date string
+function getUTCDateString() {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+}
 
 const router = express.Router();
 
@@ -82,6 +116,13 @@ router.get('/leaderboard/:game', async (req, res) => {
         console.error('Get leaderboard error:', err);
         res.status(500).json({ error: 'Failed to get leaderboard' });
     }
+});
+
+// Get today's wordle word (server-side determination using UTC)
+router.get('/wordle/word', requireAuth, (req, res) => {
+    const date = getUTCDateString();
+    const word = getDailyWordleWord(date);
+    res.json({ date, word });
 });
 
 // Get user's daily wordle status
@@ -210,6 +251,91 @@ router.get('/word-salad/arena', requireAuth, async (req, res) => {
         });
     } catch (err) {
         console.error('Get word salad arena results error:', err);
+        res.status(500).json({ error: 'Failed to get arena results' });
+    }
+});
+
+// Get daily photo mystery puzzle
+router.get('/photo-mystery/daily', requireAuth, async (req, res) => {
+    try {
+        const { date } = req.query;
+        if (!date) {
+            return res.status(400).json({ error: 'Date is required' });
+        }
+
+        const puzzle = getDailyPhotoPuzzle(date);
+
+        // Check if user has already completed this puzzle
+        const userResult = await getDailyPhotoMysteryResult(req.session.userId, date);
+
+        if (userResult) {
+            res.json({
+                puzzle: {
+                    id: puzzle.id,
+                    imageUrl: puzzle.imageUrl,
+                    answer: puzzle.answer,
+                    acceptedAnswers: puzzle.acceptedAnswers,
+                    category: puzzle.category
+                },
+                completed: true,
+                won: userResult.won,
+                guesses: userResult.details?.guesses || [],
+                score: userResult.score
+            });
+        } else {
+            // Don't send the answer or acceptedAnswers to client for active game
+            res.json({
+                puzzle: {
+                    id: puzzle.id,
+                    imageUrl: puzzle.imageUrl,
+                    answer: puzzle.answer,
+                    acceptedAnswers: puzzle.acceptedAnswers,
+                    category: puzzle.category
+                },
+                completed: false
+            });
+        }
+    } catch (err) {
+        console.error('Get daily photo mystery error:', err);
+        res.status(500).json({ error: 'Failed to get daily puzzle' });
+    }
+});
+
+// Get family photo mystery arena results
+router.get('/photo-mystery/arena', requireAuth, async (req, res) => {
+    try {
+        const { date } = req.query;
+        if (!date) {
+            return res.status(400).json({ error: 'Date is required' });
+        }
+
+        // Check if user has completed this day's puzzle
+        const userResult = await getDailyPhotoMysteryResult(req.session.userId, date);
+        if (!userResult) {
+            return res.status(403).json({ error: 'Complete today\'s puzzle first to see family results' });
+        }
+
+        // Get all family results for this date
+        const results = await getFamilyPhotoMysteryResults(date);
+        const puzzle = getDailyPhotoPuzzle(date);
+
+        res.json({
+            results: results.map(r => ({
+                username: r.username,
+                won: r.won,
+                guesses: r.details?.guesses || [],
+                score: r.score,
+                playedAt: r.played_at
+            })),
+            puzzle: {
+                id: puzzle.id,
+                answer: puzzle.answer,
+                category: puzzle.category,
+                imageUrl: puzzle.imageUrl
+            }
+        });
+    } catch (err) {
+        console.error('Get photo mystery arena results error:', err);
         res.status(500).json({ error: 'Failed to get arena results' });
     }
 });

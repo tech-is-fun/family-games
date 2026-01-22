@@ -40,8 +40,21 @@ app.use(session({
 // API routes
 app.use('/api', apiRouter);
 
-// Serve static files
-app.use(express.static(path.join(__dirname, '../public')));
+// Serve static files with cache control
+app.use(express.static(path.join(__dirname, '../public'), {
+    setHeaders: (res, filePath) => {
+        // Short cache for JS files to ensure updates are picked up
+        if (filePath.endsWith('.js')) {
+            res.setHeader('Cache-Control', 'public, max-age=300'); // 5 minutes
+        } else if (filePath.endsWith('.css')) {
+            res.setHeader('Cache-Control', 'public, max-age=300'); // 5 minutes
+        } else if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache'); // Always revalidate HTML
+        } else {
+            res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day for other assets
+        }
+    }
+}));
 
 // Protected routes - redirect to login if not authenticated
 app.get('/home.html', (req, res, next) => {

@@ -261,6 +261,34 @@ async function upsertWordSaladResult(userId, date, score, words) {
     }
 }
 
+// Get user's photo mystery result for a specific date
+async function getDailyPhotoMysteryResult(userId, date) {
+    const result = await pool.query(
+        `SELECT * FROM game_results
+         WHERE user_id = $1
+         AND game_name = 'photo-mystery'
+         AND details->>'date' = $2
+         ORDER BY played_at DESC
+         LIMIT 1`,
+        [userId, date]
+    );
+    return result.rows[0];
+}
+
+// Get all family photo mystery results for a specific date
+async function getFamilyPhotoMysteryResults(date) {
+    const result = await pool.query(
+        `SELECT gr.*, u.username
+         FROM game_results gr
+         JOIN users u ON gr.user_id = u.id
+         WHERE gr.game_name = 'photo-mystery'
+         AND gr.details->>'date' = $1
+         ORDER BY gr.won DESC, gr.score ASC`,
+        [date]
+    );
+    return result.rows;
+}
+
 // Password reset functions
 async function createPasswordResetToken(userId, token, expiresAt) {
     // Invalidate any existing tokens for this user
@@ -320,6 +348,8 @@ module.exports = {
     getDailyWordSaladResult,
     getFamilyWordSaladResults,
     upsertWordSaladResult,
+    getDailyPhotoMysteryResult,
+    getFamilyPhotoMysteryResults,
     createPasswordResetToken,
     getPasswordResetToken,
     markTokenAsUsed,

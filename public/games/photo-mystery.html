@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <title>Photo Mystery - Family Games</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h1><a href="/home.html" style="text-decoration: none; color: inherit;">Family Games</a></h1>
+        <div class="user-info">
+            <span class="username" id="username"></span>
+            <button class="btn btn-secondary" id="logout-btn">Logout</button>
+        </div>
+    </nav>
+
+    <div class="photo-mystery-container">
+        <div class="photo-mystery-header">
+            <div class="category-display">
+                <span class="category-label">Category</span>
+                <span class="category-value" id="category">Loading...</span>
+            </div>
+            <div class="guesses-display">
+                <span class="guesses-label">Guesses</span>
+                <span class="guesses-value" id="guesses-count">0/6</span>
+            </div>
+        </div>
+
+        <div class="photo-mystery-message" id="message"></div>
+
+        <div class="photo-container">
+            <img id="mystery-image" class="mystery-image" src="" alt="Mystery Photo">
+            <div class="blur-indicator" id="blur-indicator">
+                <span id="blur-level">Very Blurry</span>
+            </div>
+        </div>
+
+        <div class="guess-history" id="guess-history">
+            <h4>Your Guesses</h4>
+            <ul id="guesses-list"></ul>
+        </div>
+
+        <div class="guess-input-container" id="input-container">
+            <input type="text" id="guess-input" placeholder="What is this?" autocomplete="off" maxlength="50">
+            <button class="btn btn-primary" id="submit-btn">Guess</button>
+        </div>
+
+        <div id="arena-link" class="arena-link" style="display: none;">
+            <a href="/games/photo-mystery-arena.html">Family Photo Arena &rarr;</a>
+            <p>See how your family did!</p>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal" id="game-modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Game Over</h2>
+            <p id="modal-message"></p>
+            <div class="share-container">
+                <button class="btn btn-secondary" id="share-btn">Copy Result</button>
+                <span id="share-status"></span>
+            </div>
+            <a href="/games/photo-mystery-arena.html" class="btn btn-primary" style="display: inline-block; text-decoration: none; margin-top: 0.5rem;">See Family Results</a>
+            <button class="btn btn-secondary" id="close-modal-btn" style="margin-top: 0.5rem;">Close</button>
+        </div>
+    </div>
+
+    <script src="/js/games/photo-mystery.js"></script>
+</body>
+</html>
