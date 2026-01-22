@@ -47,6 +47,18 @@ async function initializeDatabase() {
             )
         `);
 
+        // Create password reset tokens table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                token VARCHAR(255) UNIQUE NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                used BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         console.log('Database tables initialized');
     } finally {
         client.release();
@@ -194,6 +206,48 @@ async function getFamilyWordleResults(date) {
     return result.rows;
 }
 
+// Password reset functions
+async function createPasswordResetToken(userId, token, expiresAt) {
+    // Invalidate any existing tokens for this user
+    await pool.query(
+        'UPDATE password_reset_tokens SET used = TRUE WHERE user_id = $1 AND used = FALSE',
+        [userId]
+    );
+
+    const result = await pool.query(
+        `INSERT INTO password_reset_tokens (user_id, token, expires_at)
+         VALUES ($1, $2, $3)
+         RETURNING *`,
+        [userId, token, expiresAt]
+    );
+    return result.rows[0];
+}
+
+async function getPasswordResetToken(token) {
+    const result = await pool.query(
+        `SELECT prt.*, u.username
+         FROM password_reset_tokens prt
+         JOIN users u ON prt.user_id = u.id
+         WHERE prt.token = $1 AND prt.used = FALSE AND prt.expires_at > NOW()`,
+        [token]
+    );
+    return result.rows[0];
+}
+
+async function markTokenAsUsed(token) {
+    await pool.query(
+        'UPDATE password_reset_tokens SET used = TRUE WHERE token = $1',
+        [token]
+    );
+}
+
+async function updateUserPassword(userId, passwordHash) {
+    await pool.query(
+        'UPDATE users SET password_hash = $1 WHERE id = $2',
+        [passwordHash, userId]
+    );
+}
+
 module.exports = {
     pool,
     initializeDatabase,
@@ -207,5 +261,9 @@ module.exports = {
     getGameHistory,
     getLeaderboard,
     getDailyWordleResult,
-    getFamilyWordleResults
+    getFamilyWordleResults,
+    createPasswordResetToken,
+    getPasswordResetToken,
+    markTokenAsUsed,
+    updateUserPassword
 };

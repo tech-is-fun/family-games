@@ -186,6 +186,36 @@ body {
     display: block;
 }
 
+/* Success message */
+.success-message {
+    background: #f0fdf4;
+    color: var(--success);
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    display: none;
+}
+
+.success-message.show {
+    display: block;
+}
+
+/* Auth link */
+.auth-link {
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+}
+
+.auth-link a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.auth-link a:hover {
+    text-decoration: underline;
+}
+
 /* Game Cards */
 .games-grid {
     display: grid;
