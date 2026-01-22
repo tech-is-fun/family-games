@@ -243,10 +243,10 @@ async function upsertWordSaladResult(userId, date, score, words) {
         // Update existing result
         const result = await pool.query(
             `UPDATE game_results
-             SET score = $3, details = $4, played_at = CURRENT_TIMESTAMP
-             WHERE id = $1
+             SET score = $1, details = $2, played_at = CURRENT_TIMESTAMP
+             WHERE id = $3
              RETURNING *`,
-            [existing.id, date, score, JSON.stringify({ date, score, words })]
+            [score, JSON.stringify({ date, score, words }), existing.id]
         );
         return result.rows[0];
     } else {
