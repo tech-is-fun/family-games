@@ -8,7 +8,10 @@ const {
     getGameHistory,
     getLeaderboard,
     getDailyWordleResult,
-    getFamilyWordleResults
+    getFamilyWordleResults,
+    getDailyWordSaladResult,
+    getFamilyWordSaladResults,
+    upsertWordSaladResult
 } = require('../db');
 
 const router = express.Router();
@@ -135,6 +138,78 @@ router.get('/wordle/arena', requireAuth, async (req, res) => {
         });
     } catch (err) {
         console.error('Get arena results error:', err);
+        res.status(500).json({ error: 'Failed to get arena results' });
+    }
+});
+
+// Get user's daily word salad status
+router.get('/word-salad/daily', requireAuth, async (req, res) => {
+    try {
+        const { date } = req.query;
+        if (!date) {
+            return res.status(400).json({ error: 'Date is required' });
+        }
+
+        const result = await getDailyWordSaladResult(req.session.userId, date);
+        if (result) {
+            res.json({
+                result: {
+                    score: result.score,
+                    details: result.details
+                }
+            });
+        } else {
+            res.json({ result: null });
+        }
+    } catch (err) {
+        console.error('Get daily word salad error:', err);
+        res.status(500).json({ error: 'Failed to get daily word salad status' });
+    }
+});
+
+// Save word salad result
+router.post('/word-salad/result', requireAuth, async (req, res) => {
+    try {
+        const { score, words, date } = req.body;
+        if (!date) {
+            return res.status(400).json({ error: 'Date is required' });
+        }
+
+        const result = await upsertWordSaladResult(req.session.userId, date, score, words);
+        res.json({ success: true, result });
+    } catch (err) {
+        console.error('Save word salad result error:', err);
+        res.status(500).json({ error: 'Failed to save word salad result' });
+    }
+});
+
+// Get family word salad arena results
+router.get('/word-salad/arena', requireAuth, async (req, res) => {
+    try {
+        const { date } = req.query;
+        if (!date) {
+            return res.status(400).json({ error: 'Date is required' });
+        }
+
+        // Check if user has played this day's puzzle
+        const userResult = await getDailyWordSaladResult(req.session.userId, date);
+        if (!userResult) {
+            return res.status(403).json({ error: 'Play today\'s puzzle first to see family results' });
+        }
+
+        // Get all family results for this date
+        const results = await getFamilyWordSaladResults(date);
+
+        res.json({
+            results: results.map(r => ({
+                username: r.username,
+                score: r.score,
+                words: r.details?.words || [],
+                playedAt: r.played_at
+            }))
+        });
+    } catch (err) {
+        console.error('Get word salad arena results error:', err);
         res.status(500).json({ error: 'Failed to get arena results' });
     }
 });

@@ -206,6 +206,61 @@ async function getFamilyWordleResults(date) {
     return result.rows;
 }
 
+// Get user's word salad result for a specific date
+async function getDailyWordSaladResult(userId, date) {
+    const result = await pool.query(
+        `SELECT * FROM game_results
+         WHERE user_id = $1
+         AND game_name = 'word-salad'
+         AND details->>'date' = $2
+         ORDER BY played_at DESC
+         LIMIT 1`,
+        [userId, date]
+    );
+    return result.rows[0];
+}
+
+// Get all family word salad results for a specific date
+async function getFamilyWordSaladResults(date) {
+    const result = await pool.query(
+        `SELECT gr.*, u.username
+         FROM game_results gr
+         JOIN users u ON gr.user_id = u.id
+         WHERE gr.game_name = 'word-salad'
+         AND gr.details->>'date' = $1
+         ORDER BY gr.score DESC`,
+        [date]
+    );
+    return result.rows;
+}
+
+// Upsert word salad result (update if exists, insert if not)
+async function upsertWordSaladResult(userId, date, score, words) {
+    // Check if result exists
+    const existing = await getDailyWordSaladResult(userId, date);
+
+    if (existing) {
+        // Update existing result
+        const result = await pool.query(
+            `UPDATE game_results
+             SET score = $3, details = $4, played_at = CURRENT_TIMESTAMP
+             WHERE id = $1
+             RETURNING *`,
+            [existing.id, date, score, JSON.stringify({ date, score, words })]
+        );
+        return result.rows[0];
+    } else {
+        // Insert new result
+        const result = await pool.query(
+            `INSERT INTO game_results (user_id, game_name, score, won, details)
+             VALUES ($1, 'word-salad', $2, true, $3)
+             RETURNING *`,
+            [userId, score, JSON.stringify({ date, score, words })]
+        );
+        return result.rows[0];
+    }
+}
+
 // Password reset functions
 async function createPasswordResetToken(userId, token, expiresAt) {
     // Invalidate any existing tokens for this user
@@ -262,6 +317,9 @@ module.exports = {
     getLeaderboard,
     getDailyWordleResult,
     getFamilyWordleResults,
+    getDailyWordSaladResult,
+    getFamilyWordSaladResults,
+    upsertWordSaladResult,
     createPasswordResetToken,
     getPasswordResetToken,
     markTokenAsUsed,

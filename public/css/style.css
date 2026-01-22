@@ -598,6 +598,175 @@ body {
     color: var(--gray-600);
 }
 
+/* Word Salad Styles */
+.word-salad-container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 1rem;
+    touch-action: manipulation;
+    min-height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+}
+
+.word-salad-header {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 1rem;
+}
+
+.score-display, .words-found-display {
+    text-align: center;
+    background: var(--white);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.score-label, .words-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--gray-600);
+    text-transform: uppercase;
+}
+
+.score-value, .words-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary);
+}
+
+.word-salad-message {
+    text-align: center;
+    padding: 0.5rem;
+    min-height: 2rem;
+    font-weight: 500;
+}
+
+.word-salad-message.error {
+    color: var(--danger);
+}
+
+.word-salad-message.valid {
+    color: var(--success);
+}
+
+.current-word {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: bold;
+    letter-spacing: 0.25rem;
+    min-height: 3rem;
+    text-transform: uppercase;
+    color: var(--gray-800);
+    margin-bottom: 1rem;
+}
+
+.letter-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 280px;
+    margin: 0 auto 1.5rem;
+}
+
+.letter-tile {
+    aspect-ratio: 1;
+    border: none;
+    border-radius: 50%;
+    background: var(--gray-200);
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: transform 0.1s, background 0.2s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.letter-tile:hover {
+    background: var(--gray-300);
+}
+
+.letter-tile.center {
+    background: var(--primary);
+    color: var(--white);
+}
+
+.letter-tile.center:hover {
+    background: var(--primary-dark);
+}
+
+.letter-tile.selected {
+    transform: scale(0.9);
+    opacity: 0.5;
+}
+
+.word-salad-controls {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.word-salad-controls .btn {
+    min-width: 80px;
+}
+
+.found-words {
+    background: var(--white);
+    border-radius: 8px;
+    padding: 1rem;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.found-words h4 {
+    margin-bottom: 0.75rem;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+}
+
+.words-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.found-word {
+    background: var(--gray-100);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+}
+
+/* Word Salad Arena Styles */
+.word-salad-arena-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.player-words {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.player-words .word {
+    background: var(--gray-100);
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
     .navbar {
@@ -707,6 +876,51 @@ body {
 
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Word Salad mobile */
+    .word-salad-container {
+        padding: 0.5rem;
+        padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+        min-height: calc(100dvh - 50px);
+    }
+
+    .word-salad-header {
+        gap: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .score-display, .words-found-display {
+        padding: 0.5rem 1rem;
+    }
+
+    .current-word {
+        font-size: 1.5rem;
+        min-height: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .letter-tiles {
+        max-width: 240px;
+        gap: 8px;
+        margin-bottom: 1rem;
+    }
+
+    .letter-tile {
+        font-size: 1.25rem;
+    }
+
+    .word-salad-controls {
+        margin-bottom: 1rem;
+    }
+
+    .word-salad-controls .btn {
+        min-width: 70px;
+        padding: 0.5rem 1rem;
+    }
+
+    .found-words {
+        padding: 0.75rem;
     }
 
     /* General mobile */

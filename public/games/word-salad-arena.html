@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Word Salad Arena - Family Games</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .arena-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .arena-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .arena-header h2 {
+            margin: 0;
+        }
+
+        .date-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .date-nav button {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: var(--gray-200);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .date-nav button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .date-nav span {
+            min-width: 120px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .player-result {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .player-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .player-score {
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .player-words {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .player-words .word {
+            background: var(--gray-100);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+        }
+
+        .no-results, .locked-message {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray-600);
+        }
+
+        .locked-message h3 {
+            margin-bottom: 0.5rem;
+            color: var(--gray-800);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .arena-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .date-nav {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1><a href="/home.html" style="text-decoration: none; color: inherit;">Family Games</a></h1>
+        <div class="user-info">
+            <span class="username" id="username"></span>
+            <button class="btn btn-secondary" id="logout-btn">Logout</button>
+        </div>
+    </nav>
+
+    <div class="arena-container">
+        <a href="/games/word-salad.html" class="back-link">&larr; Back to Word Salad</a>
+
+        <div class="arena-header">
+            <h2>Word Salad Arena</h2>
+            <div class="date-nav">
+                <button id="prev-day">&larr;</button>
+                <span id="current-date">Today</span>
+                <button id="next-day">&rarr;</button>
+            </div>
+        </div>
+
+        <div id="family-results">
+            <div class="no-results">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        // Arena state
+        let currentDate = '';
+        const maxDaysBack = 3;
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (!res.ok) {
+                    window.location.href = '/';
+                    return null;
+                }
+                const data = await res.json();
+                return data.user;
+            } catch (err) {
+                window.location.href = '/';
+                return null;
+            }
+        }
+
+        // Get today's date string
+        function getTodayDate() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        // Format date for display
+        function formatDate(dateStr) {
+            const date = new Date(dateStr + 'T00:00:00');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            if (dateStr === getTodayDate()) {
+                return 'Today';
+            } else if (date.getTime() === yesterday.getTime()) {
+                return 'Yesterday';
+            } else {
+                return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            }
+        }
+
+        // Get date offset by days
+        function getDateOffset(baseDate, days) {
+            const date = new Date(baseDate + 'T00:00:00');
+            date.setDate(date.getDate() + days);
+            return date.toISOString().split('T')[0];
+        }
+
+        // Load arena results for a date
+        async function loadArenaResults(date) {
+            const resultsEl = document.getElementById('family-results');
+            resultsEl.innerHTML = '<div class="no-results">Loading...</div>';
+
+            try {
+                const res = await fetch(`/api/games/word-salad/arena?date=${date}`);
+
+                if (res.status === 403) {
+                    resultsEl.innerHTML = `
+                        <div class="locked-message">
+                            <h3>Locked</h3>
+                            <p>Play ${date === getTodayDate() ? "today's" : "this day's"} Word Salad puzzle first to see family results.</p>
+                            <a href="/games/word-salad.html" class="btn btn-primary" style="margin-top: 1rem;">Play Word Salad</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (!res.ok) {
+                    throw new Error('Failed to load results');
+                }
+
+                const data = await res.json();
+
+                if (data.results.length === 0) {
+                    resultsEl.innerHTML = '<div class="no-results">No one has played yet on this day.</div>';
+                    return;
+                }
+
+                // Render results (sorted by score, highest first)
+                let html = '';
+                for (const result of data.results) {
+                    html += `
+                        <div class="player-result">
+                            <div class="player-header">
+                                <span class="player-name">${result.username}</span>
+                                <span class="player-score">${result.score} pts (${result.words.length} words)</span>
+                            </div>
+                            <div class="player-words">
+                                ${result.words.map(w => `<span class="word">${w}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                resultsEl.innerHTML = html;
+            } catch (err) {
+                console.error('Failed to load arena results:', err);
+                resultsEl.innerHTML = '<div class="no-results">Failed to load results. Please try again.</div>';
+            }
+        }
+
+        // Update navigation buttons
+        function updateNavigation() {
+            const today = getTodayDate();
+            const minDate = getDateOffset(today, -maxDaysBack);
+
+            document.getElementById('current-date').textContent = formatDate(currentDate);
+            document.getElementById('next-day').disabled = currentDate >= today;
+            document.getElementById('prev-day').disabled = currentDate <= minDate;
+        }
+
+        // Navigate to previous day
+        function goToPrevDay() {
+            const minDate = getDateOffset(getTodayDate(), -maxDaysBack);
+            if (currentDate > minDate) {
+                currentDate = getDateOffset(currentDate, -1);
+                updateNavigation();
+                loadArenaResults(currentDate);
+            }
+        }
+
+        // Navigate to next day
+        function goToNextDay() {
+            const today = getTodayDate();
+            if (currentDate < today) {
+                currentDate = getDateOffset(currentDate, 1);
+                updateNavigation();
+                loadArenaResults(currentDate);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('prev-day').addEventListener('click', goToPrevDay);
+        document.getElementById('next-day').addEventListener('click', goToNextDay);
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            window.location.href = '/';
+        });
+
+        // Initialize
+        async function init() {
+            const user = await checkAuth();
+            if (user) {
+                document.getElementById('username').textContent = user.username;
+                currentDate = getTodayDate();
+                updateNavigation();
+                loadArenaResults(currentDate);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
