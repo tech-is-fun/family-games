@@ -45,10 +45,11 @@ function getDailyWordleWord(dateStr) {
     return wordleWords[index].toUpperCase();
 }
 
-// Get current UTC date string
-function getUTCDateString() {
+// Get current date string in Vancouver (Pacific) timezone
+function getVancouverDateString() {
     const now = new Date();
-    return now.toISOString().split('T')[0];
+    // Format: YYYY-MM-DD in Vancouver timezone
+    return now.toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
 }
 
 const router = express.Router();
@@ -123,7 +124,7 @@ router.get('/leaderboard/:game', async (req, res) => {
 
 // Get today's wordle word (server-side determination using UTC)
 router.get('/wordle/word', requireAuth, (req, res) => {
-    const date = getUTCDateString();
+    const date = getVancouverDateString();
     const word = getDailyWordleWord(date);
     res.json({ date, word });
 });
@@ -131,7 +132,7 @@ router.get('/wordle/word', requireAuth, (req, res) => {
 // Get starter word for today
 router.get('/wordle/starter', requireAuth, async (req, res) => {
     try {
-        const date = getUTCDateString();
+        const date = getVancouverDateString();
         const starter = await getStarterWord(date);
 
         if (starter) {
@@ -174,7 +175,7 @@ router.get('/wordle/starter', requireAuth, async (req, res) => {
 router.post('/wordle/starter', requireAuth, async (req, res) => {
     try {
         const { word } = req.body;
-        const date = getUTCDateString();
+        const date = getVancouverDateString();
 
         if (!word || word.length !== 5) {
             return res.status(400).json({ error: 'Word must be exactly 5 letters' });
@@ -239,7 +240,7 @@ router.get('/wordle/daily', requireAuth, async (req, res) => {
 // Get today's family wordle scores for leaderboard (doesn't require completion)
 router.get('/wordle/today-scores', requireAuth, async (req, res) => {
     try {
-        const date = getUTCDateString();
+        const date = getVancouverDateString();
         const results = await getFamilyWordleResults(date);
 
         res.json({
