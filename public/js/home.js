@@ -78,107 +78,49 @@ function displayStats(stats) {
     }
 }
 
-// Load combined leaderboard
+// Load today's Wordle leaderboard
 async function loadLeaderboard() {
     try {
-        const [wordleRes, sudokuRes, wordSaladRes, photoMysteryRes] = await Promise.all([
-            fetch('/api/games/leaderboard/wordle'),
-            fetch('/api/games/leaderboard/sudoku'),
-            fetch('/api/games/leaderboard/word-salad'),
-            fetch('/api/games/leaderboard/photo-mystery')
-        ]);
-
-        const wordleData = await wordleRes.json();
-        const sudokuData = await sudokuRes.json();
-        const wordSaladData = await wordSaladRes.json();
-        const photoMysteryData = await photoMysteryRes.json();
-
-        displayLeaderboard(wordleData.leaderboard, sudokuData.leaderboard, wordSaladData.leaderboard, photoMysteryData.leaderboard);
+        const res = await fetch('/api/games/wordle/today-scores');
+        const data = await res.json();
+        displayLeaderboard(data.results);
     } catch (err) {
         console.error('Failed to load leaderboard:', err);
     }
 }
 
-// Display combined leaderboard
-function displayLeaderboard(wordleBoard, sudokuBoard, wordSaladBoard, photoMysteryBoard) {
+// Display today's Wordle leaderboard
+function displayLeaderboard(results) {
     const tbody = document.getElementById('leaderboard-body');
 
-    // Combine data by username
-    const players = new Map();
-
-    wordleBoard.forEach(entry => {
-        players.set(entry.username, {
-            username: entry.username,
-            wordleWins: entry.games_won,
-            sudokuWins: 0,
-            wordSaladBest: 0,
-            photoMysteryWins: 0
-        });
-    });
-
-    sudokuBoard.forEach(entry => {
-        if (players.has(entry.username)) {
-            players.get(entry.username).sudokuWins = entry.games_won;
-        } else {
-            players.set(entry.username, {
-                username: entry.username,
-                wordleWins: 0,
-                sudokuWins: entry.games_won,
-                wordSaladBest: 0,
-                photoMysteryWins: 0
-            });
-        }
-    });
-
-    wordSaladBoard.forEach(entry => {
-        if (players.has(entry.username)) {
-            players.get(entry.username).wordSaladBest = entry.best_score || 0;
-        } else {
-            players.set(entry.username, {
-                username: entry.username,
-                wordleWins: 0,
-                sudokuWins: 0,
-                wordSaladBest: entry.best_score || 0,
-                photoMysteryWins: 0
-            });
-        }
-    });
-
-    photoMysteryBoard.forEach(entry => {
-        if (players.has(entry.username)) {
-            players.get(entry.username).photoMysteryWins = entry.games_won;
-        } else {
-            players.set(entry.username, {
-                username: entry.username,
-                wordleWins: 0,
-                sudokuWins: 0,
-                wordSaladBest: 0,
-                photoMysteryWins: entry.games_won
-            });
-        }
-    });
-
-    // Sort by total wins + word salad score
-    const sorted = Array.from(players.values()).sort((a, b) => {
-        const totalA = a.wordleWins + a.sudokuWins + a.wordSaladBest + a.photoMysteryWins;
-        const totalB = b.wordleWins + b.sudokuWins + b.wordSaladBest + b.photoMysteryWins;
-        return totalB - totalA;
-    });
-
-    if (sorted.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5">No games played yet</td></tr>';
+    if (!results || results.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="2">No one has played today yet</td></tr>';
         return;
     }
 
-    tbody.innerHTML = sorted.map(player => `
-        <tr>
-            <td>${player.username}</td>
-            <td>${player.wordleWins}</td>
-            <td>${player.sudokuWins}</td>
-            <td>${player.wordSaladBest}</td>
-            <td>${player.photoMysteryWins}</td>
-        </tr>
-    `).join('');
+    // Find the lowest score (best performance) among winners
+    const winners = results.filter(r => r.won);
+    const lowestScore = winners.length > 0 ? Math.min(...winners.map(r => r.score)) : null;
+
+    // Sort by score (lowest first for winners, then non-winners)
+    const sorted = [...results].sort((a, b) => {
+        // Winners come before non-winners
+        if (a.won && !b.won) return -1;
+        if (!a.won && b.won) return 1;
+        // Among winners, lower score is better
+        return a.score - b.score;
+    });
+
+    tbody.innerHTML = sorted.map(player => {
+        const isLowest = player.won && player.score === lowestScore;
+        const scoreDisplay = player.won ? player.score : 'X';
+        return `
+            <tr class="${isLowest ? 'highlight-best' : ''}">
+                <td>${player.username}</td>
+                <td>${scoreDisplay}</td>
+            </tr>
+        `;
+    }).join('');
 }
 
 // Logout

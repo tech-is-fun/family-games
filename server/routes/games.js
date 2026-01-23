@@ -135,10 +135,12 @@ router.get('/wordle/starter', requireAuth, async (req, res) => {
         const starter = await getStarterWord(date);
 
         if (starter) {
+            // Use game_name if available, otherwise fallback to username
+            const displayName = starter.chosen_by_game_name || starter.chosen_by_username;
             res.json({
                 hasStarter: true,
                 word: starter.word.toUpperCase(),
-                chosenBy: starter.chosen_by_username,
+                chosenBy: displayName,
                 date
             });
         } else {
@@ -195,11 +197,12 @@ router.post('/wordle/starter', requireAuth, async (req, res) => {
         } else {
             // Someone else already set it
             const existing = await getStarterWord(date);
+            const displayName = existing.chosen_by_game_name || existing.chosen_by_username;
             res.json({
                 success: false,
                 alreadySet: true,
                 word: existing.word.toUpperCase(),
-                chosenBy: existing.chosen_by_username
+                chosenBy: displayName
             });
         }
     } catch (err) {
@@ -230,6 +233,27 @@ router.get('/wordle/daily', requireAuth, async (req, res) => {
     } catch (err) {
         console.error('Get daily wordle error:', err);
         res.status(500).json({ error: 'Failed to get daily wordle status' });
+    }
+});
+
+// Get today's family wordle scores for leaderboard (doesn't require completion)
+router.get('/wordle/today-scores', requireAuth, async (req, res) => {
+    try {
+        const date = getUTCDateString();
+        const results = await getFamilyWordleResults(date);
+
+        res.json({
+            date,
+            results: results.map(r => ({
+                username: r.username,
+                won: r.won,
+                score: r.score,
+                playedAt: r.played_at
+            }))
+        });
+    } catch (err) {
+        console.error('Get today scores error:', err);
+        res.status(500).json({ error: 'Failed to get today scores' });
     }
 });
 

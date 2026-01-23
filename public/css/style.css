@@ -664,6 +664,15 @@ body {
     color: var(--gray-600);
 }
 
+.leaderboard tr.highlight-best {
+    background: #fef9e7;
+}
+
+.leaderboard tr.highlight-best td {
+    font-weight: bold;
+    color: var(--success);
+}
+
 /* Word Salad Styles */
 .word-salad-container {
     max-width: 500px;
