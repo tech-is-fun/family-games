@@ -418,7 +418,7 @@ function getDailyWordFallback(dateStr) {
 // Fetch daily word from server (ensures consistent word across all users)
 async function fetchDailyWord() {
     try {
-        const res = await fetch('/api/games/wordle/word');
+        const res = await fetch('/api/games/wordle/word', { cache: 'no-store' });
         if (res.ok) {
             const data = await res.json();
             return { date: data.date, word: data.word };
@@ -516,7 +516,7 @@ function updateArenaLink() {
 // Check if user already completed today's puzzle
 async function checkTodayStatus() {
     try {
-        const res = await fetch(`/api/games/wordle/daily?date=${todayDate}`);
+        const res = await fetch(`/api/games/wordle/daily?date=${todayDate}`, { cache: 'no-store' });
         if (res.ok) {
             const data = await res.json();
             if (data.completed) {
@@ -599,7 +599,7 @@ let isSelectingStarter = false;
 // Check and handle starter word
 async function checkStarterWord() {
     try {
-        const res = await fetch('/api/games/wordle/starter');
+        const res = await fetch('/api/games/wordle/starter', { cache: 'no-store' });
         if (!res.ok) return null;
         return await res.json();
     } catch (err) {
@@ -658,12 +658,18 @@ async function selectStarterWord(word) {
 
         const data = await res.json();
 
-        if (data.success || data.alreadySet) {
+        if (data.success) {
+            // First user chose the starter word - just close modal, they play normally
             starterModal.classList.remove('show');
-            // Small delay to ensure modal is hidden and DOM is ready
+            showMessage(`You set today's starter word: ${data.word}`, 'valid');
+            isSelectingStarter = false;
+        } else if (data.alreadySet) {
+            // Someone else already set it while this user was choosing - apply it
+            starterModal.classList.remove('show');
+            showMessage(`${data.chosenBy} already chose today's starter word: ${data.word}`, 'valid');
             setTimeout(() => {
                 applyStarterWord(data.word);
-            }, 100);
+            }, 1500);
         } else if (data.error) {
             showStarterError(data.error);
             isSelectingStarter = false;
@@ -751,11 +757,11 @@ async function startGame() {
         const starterData = await checkStarterWord();
         if (starterData) {
             if (starterData.hasStarter) {
-                // Apply existing starter word
-                showMessage(`Starter word by ${starterData.chosenBy}: ${starterData.word}`, 'valid');
+                // Apply existing starter word - show who chose it
+                showMessage(`${starterData.chosenBy} chose today's starter word: ${starterData.word}`, 'valid');
                 setTimeout(() => {
                     applyStarterWord(starterData.word);
-                }, 500);
+                }, 1500); // Longer delay so user can read the message
             } else {
                 // Show modal to pick starter word
                 showStarterModal(starterData.suggestions);
