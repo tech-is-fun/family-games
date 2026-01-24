@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Word Salad Arena - Family Games</title>
+    <title>Word Finder Arena - Family Games</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
         .arena-container {
@@ -111,6 +111,22 @@
             text-decoration: underline;
         }
 
+        .done-badge {
+            background: var(--success, #10b981);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .words-hidden {
+            color: var(--gray-500);
+            font-style: italic;
+            font-size: 0.875rem;
+        }
+
         @media (max-width: 600px) {
             .arena-header {
                 flex-direction: column;
@@ -134,10 +150,10 @@
     </nav>
 
     <div class="arena-container">
-        <a href="/games/word-salad.html" class="back-link">&larr; Back to Word Salad</a>
+        <a href="/games/word-salad.html" class="back-link">&larr; Back to Word Finder</a>
 
         <div class="arena-header">
-            <h2>Word Salad Arena</h2>
+            <h2>Word Finder Arena</h2>
             <div class="date-nav">
                 <button id="prev-day">&larr;</button>
                 <span id="current-date">Today</span>
@@ -213,8 +229,8 @@
                     resultsEl.innerHTML = `
                         <div class="locked-message">
                             <h3>Locked</h3>
-                            <p>Play ${date === getTodayDate() ? "today's" : "this day's"} Word Salad puzzle first to see family results.</p>
-                            <a href="/games/word-salad.html" class="btn btn-primary" style="margin-top: 1rem;">Play Word Salad</a>
+                            <p>Play ${date === getTodayDate() ? "today's" : "this day's"} Word Finder puzzle first to see family results.</p>
+                            <a href="/games/word-salad.html" class="btn btn-primary" style="margin-top: 1rem;">Play Word Finder</a>
                         </div>
                     `;
                     return;
@@ -234,14 +250,20 @@
                 // Render results (sorted by score, highest first)
                 let html = '';
                 for (const result of data.results) {
+                    const doneIndicator = result.done ? '<span class="done-badge">Done</span>' : '';
+                    const hasWords = result.words && result.words.length > 0;
+
                     html += `
                         <div class="player-result">
                             <div class="player-header">
-                                <span class="player-name">${result.username}</span>
-                                <span class="player-score">${result.score} pts (${result.words.length} words)</span>
+                                <span class="player-name">${result.username} ${doneIndicator}</span>
+                                <span class="player-score">${result.score} pts (${result.wordCount} words)</span>
                             </div>
                             <div class="player-words">
-                                ${result.words.map(w => `<span class="word">${w}</span>`).join('')}
+                                ${hasWords
+                                    ? result.words.map(w => `<span class="word">${w}</span>`).join('')
+                                    : '<span class="words-hidden">Words hidden until done</span>'
+                                }
                             </div>
                         </div>
                     `;

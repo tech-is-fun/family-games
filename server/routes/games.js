@@ -316,12 +316,12 @@ router.get('/word-salad/daily', requireAuth, async (req, res) => {
 // Save word salad result
 router.post('/word-salad/result', requireAuth, async (req, res) => {
     try {
-        const { score, words, date } = req.body;
+        const { score, words, date, done } = req.body;
         if (!date) {
             return res.status(400).json({ error: 'Date is required' });
         }
 
-        const result = await upsertWordSaladResult(req.session.userId, date, score, words);
+        const result = await upsertWordSaladResult(req.session.userId, date, score, words, done);
         res.json({ success: true, result });
     } catch (err) {
         console.error('Save word salad result error:', err);
@@ -346,13 +346,27 @@ router.get('/word-salad/arena', requireAuth, async (req, res) => {
         // Get all family results for this date
         const results = await getFamilyWordSaladResults(date);
 
+        // Check if this is today's puzzle and if current user is done
+        const today = getVancouverDateString();
+        const isToday = date === today;
+        const currentUserDone = userResult.details?.done || false;
+
         res.json({
-            results: results.map(r => ({
-                username: r.username,
-                score: r.score,
-                words: r.details?.words || [],
-                playedAt: r.played_at
-            }))
+            results: results.map(r => {
+                const playerDone = r.details?.done || false;
+                const words = r.details?.words || [];
+                // Show words if: not today, OR current user is done, OR this player is done
+                const showWords = !isToday || currentUserDone || playerDone;
+
+                return {
+                    username: r.username,
+                    score: r.score,
+                    wordCount: words.length,
+                    words: showWords ? words : [],
+                    done: playerDone,
+                    playedAt: r.played_at
+                };
+            })
         });
     } catch (err) {
         console.error('Get word salad arena results error:', err);

@@ -14,8 +14,20 @@ async function initializeDatabase() {
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(50) UNIQUE NOT NULL,
                 password_hash VARCHAR(255) NOT NULL,
+                game_name VARCHAR(50),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
+        `);
+
+        // Add game_name column if it doesn't exist (for existing databases)
+        await client.query(`
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                               WHERE table_name='users' AND column_name='game_name') THEN
+                    ALTER TABLE users ADD COLUMN game_name VARCHAR(50);
+                END IF;
+            END $$;
         `);
 
         // Create game stats table
@@ -77,10 +89,10 @@ async function initializeDatabase() {
 }
 
 // User queries
-async function createUser(username, passwordHash) {
+async function createUser(username, passwordHash, gameName = null) {
     const result = await pool.query(
-        'INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username, created_at',
-        [username, passwordHash]
+        'INSERT INTO users (username, password_hash, game_name) VALUES ($1, $2, $3) RETURNING id, username, game_name, created_at',
+        [username, passwordHash, gameName]
     );
     return result.rows[0];
 }
@@ -95,7 +107,7 @@ async function getUserByUsername(username) {
 
 async function getUserById(id) {
     const result = await pool.query(
-        'SELECT id, username, created_at FROM users WHERE id = $1',
+        'SELECT id, username, game_name, created_at FROM users WHERE id = $1',
         [id]
     );
     return result.rows[0];
@@ -246,18 +258,20 @@ async function getFamilyWordSaladResults(date) {
 }
 
 // Upsert word salad result (update if exists, insert if not)
-async function upsertWordSaladResult(userId, date, score, words) {
+async function upsertWordSaladResult(userId, date, score, words, done = false) {
     // Check if result exists
     const existing = await getDailyWordSaladResult(userId, date);
 
     if (existing) {
-        // Update existing result
+        // Update existing result (preserve done if already true)
+        const wasDone = existing.details?.done || false;
+        const isDone = wasDone || done;
         const result = await pool.query(
             `UPDATE game_results
              SET score = $1, details = $2, played_at = CURRENT_TIMESTAMP
              WHERE id = $3
              RETURNING *`,
-            [score, JSON.stringify({ date, score, words }), existing.id]
+            [score, JSON.stringify({ date, score, words, done: isDone }), existing.id]
         );
         return result.rows[0];
     } else {
@@ -266,7 +280,7 @@ async function upsertWordSaladResult(userId, date, score, words) {
             `INSERT INTO game_results (user_id, game_name, score, won, details)
              VALUES ($1, 'word-salad', $2, true, $3)
              RETURNING *`,
-            [userId, score, JSON.stringify({ date, score, words })]
+            [userId, score, JSON.stringify({ date, score, words, done })]
         );
         return result.rows[0];
     }
@@ -303,7 +317,7 @@ async function getFamilyPhotoMysteryResults(date) {
 // Wordle starter word functions
 async function getStarterWord(date) {
     const result = await pool.query(
-        `SELECT wsw.*, u.username as chosen_by_username
+        `SELECT wsw.*, u.username as chosen_by_username, u.game_name as chosen_by_game_name
          FROM wordle_starter_words wsw
          LEFT JOIN users u ON wsw.chosen_by = u.id
          WHERE wsw.date = $1`,
