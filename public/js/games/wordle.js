@@ -659,17 +659,19 @@ async function selectStarterWord(word) {
         const data = await res.json();
 
         if (data.success) {
-            // First user chose the starter word - just close modal, they play normally
+            // First user chose the starter word - apply it to their game too
             starterModal.classList.remove('show');
             showMessage(`You set today's starter word: ${data.word}`, 'valid');
-            isSelectingStarter = false;
+            setTimeout(() => {
+                applyStarterWord(data.word);
+            }, 4000);
         } else if (data.alreadySet) {
             // Someone else already set it while this user was choosing - apply it
             starterModal.classList.remove('show');
-            showMessage(`${data.chosenBy} already chose today's starter word: ${data.word}`, 'valid');
+            showMessage(`${data.chosenBy} chose today's starter word: ${data.word}`, 'valid');
             setTimeout(() => {
                 applyStarterWord(data.word);
-            }, 1500);
+            }, 4000);
         } else if (data.error) {
             showStarterError(data.error);
             isSelectingStarter = false;
@@ -761,7 +763,7 @@ async function startGame() {
                 showMessage(`${starterData.chosenBy} chose today's starter word: ${starterData.word}`, 'valid');
                 setTimeout(() => {
                     applyStarterWord(starterData.word);
-                }, 1500); // Longer delay so user can read the message
+                }, 4000);
             } else {
                 // Show modal to pick starter word
                 showStarterModal(starterData.suggestions);

@@ -177,14 +177,11 @@ router.post('/wordle/starter', requireAuth, async (req, res) => {
         const { word } = req.body;
         const date = getVancouverDateString();
 
-        if (!word || word.length !== 5) {
+        if (!word || word.length !== 5 || !/^[a-zA-Z]+$/.test(word)) {
             return res.status(400).json({ error: 'Word must be exactly 5 letters' });
         }
 
-        // Check if word is valid
-        if (!wordleWords.includes(word.toLowerCase())) {
-            return res.status(400).json({ error: 'Not a valid word' });
-        }
+        // Client validates against full word list - server just ensures it's alphabetic
 
         // Try to set the starter word (will fail if one already exists)
         const result = await setStarterWord(date, word, req.session.userId);
