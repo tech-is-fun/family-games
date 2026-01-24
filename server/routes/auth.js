@@ -26,7 +26,7 @@ const router = express.Router();
 // Register new user
 router.post('/register', async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { username, password, gameName } = req.body;
 
         if (!username || !password) {
             return res.status(400).json({ error: 'Username and password are required' });
@@ -40,6 +40,10 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Password must be at least 6 characters' });
         }
 
+        if (gameName && gameName.length > 50) {
+            return res.status(400).json({ error: 'Game name must be 50 characters or less' });
+        }
+
         // Check if username already exists
         const existing = await getUserByUsername(username);
         if (existing) {
@@ -48,12 +52,12 @@ router.post('/register', async (req, res) => {
 
         // Hash password and create user
         const passwordHash = await bcrypt.hash(password, 10);
-        const user = await createUser(username, passwordHash);
+        const user = await createUser(username, passwordHash, gameName || null);
 
         // Create session
         req.session.userId = user.id;
 
-        res.json({ success: true, user: { id: user.id, username: user.username } });
+        res.json({ success: true, user: { id: user.id, username: user.username, gameName: user.game_name } });
     } catch (err) {
         console.error('Registration error:', err);
         res.status(500).json({ error: 'Registration failed' });
@@ -111,7 +115,7 @@ router.get('/me', async (req, res) => {
         if (!user) {
             return res.status(401).json({ error: 'User not found' });
         }
-        res.json({ user: { id: user.id, username: user.username } });
+        res.json({ user: { id: user.id, username: user.username, gameName: user.game_name } });
     } catch (err) {
         console.error('Get user error:', err);
         res.status(500).json({ error: 'Failed to get user' });
