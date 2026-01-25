@@ -288,6 +288,27 @@ router.get('/wordle/arena', requireAuth, async (req, res) => {
     }
 });
 
+// Get today's family word salad scores for leaderboard (doesn't require completion)
+router.get('/word-salad/today-scores', requireAuth, async (req, res) => {
+    try {
+        const date = getVancouverDateString();
+        const results = await getFamilyWordSaladResults(date);
+
+        res.json({
+            date,
+            results: results.map(r => ({
+                username: r.username,
+                score: r.score,
+                wordCount: (r.details?.words || []).length,
+                playedAt: r.played_at
+            }))
+        });
+    } catch (err) {
+        console.error('Get word salad today scores error:', err);
+        res.status(500).json({ error: 'Failed to get today scores' });
+    }
+});
+
 // Get user's daily word salad status
 router.get('/word-salad/daily', requireAuth, async (req, res) => {
     try {

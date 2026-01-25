@@ -79,19 +79,19 @@ function displayStats(stats) {
 }
 
 // Load today's Wordle leaderboard
-async function loadLeaderboard() {
+async function loadWordleLeaderboard() {
     try {
         const res = await fetch('/api/games/wordle/today-scores');
         const data = await res.json();
-        displayLeaderboard(data.results);
+        displayWordleLeaderboard(data.results);
     } catch (err) {
-        console.error('Failed to load leaderboard:', err);
+        console.error('Failed to load Wordle leaderboard:', err);
     }
 }
 
 // Display today's Wordle leaderboard
-function displayLeaderboard(results) {
-    const tbody = document.getElementById('leaderboard-body');
+function displayWordleLeaderboard(results) {
+    const tbody = document.getElementById('wordle-leaderboard-body');
 
     if (!results || results.length === 0) {
         tbody.innerHTML = '<tr><td colspan="2">No one has played today yet</td></tr>';
@@ -123,6 +123,44 @@ function displayLeaderboard(results) {
     }).join('');
 }
 
+// Load today's Word Finder leaderboard
+async function loadWordFinderLeaderboard() {
+    try {
+        const res = await fetch('/api/games/word-salad/today-scores');
+        const data = await res.json();
+        displayWordFinderLeaderboard(data.results);
+    } catch (err) {
+        console.error('Failed to load Word Finder leaderboard:', err);
+    }
+}
+
+// Display today's Word Finder leaderboard
+function displayWordFinderLeaderboard(results) {
+    const tbody = document.getElementById('word-finder-leaderboard-body');
+
+    if (!results || results.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3">No one has played today yet</td></tr>';
+        return;
+    }
+
+    // Find the highest score (best performance)
+    const highestScore = Math.max(...results.map(r => r.score));
+
+    // Sort by score (highest first)
+    const sorted = [...results].sort((a, b) => b.score - a.score);
+
+    tbody.innerHTML = sorted.map(player => {
+        const isHighest = player.score === highestScore;
+        return `
+            <tr class="${isHighest ? 'highlight-best' : ''}">
+                <td>${player.username}</td>
+                <td>${player.score}</td>
+                <td>${player.wordCount}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
 // Logout
 document.getElementById('logout-btn').addEventListener('click', async () => {
     try {
@@ -139,7 +177,8 @@ async function init() {
     if (user) {
         document.getElementById('username').textContent = user.username;
         loadStats();
-        loadLeaderboard();
+        loadWordleLeaderboard();
+        loadWordFinderLeaderboard();
     }
 }
 

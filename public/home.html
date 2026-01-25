@@ -27,20 +27,19 @@
                 </div>
             </a>
 
+            <a href="/games/word-salad.html" class="game-card game-card-active">
+                <h3>Word Finder</h3>
+                <p>Find words using the daily letters</p>
+                <div class="stats" id="word-salad-stats">
+                    <span>Loading...</span>
+                </div>
+            </a>
+
             <a href="/games/sudoku.html" class="game-card game-card-dev">
                 <div class="dev-badge"><span class="construction-icon">&#128679;</span> In Development</div>
                 <h3>Sudoku</h3>
                 <p>Fill the grid with numbers 1-9</p>
                 <div class="stats" id="sudoku-stats">
-                    <span>Loading...</span>
-                </div>
-            </a>
-
-            <a href="/games/word-salad.html" class="game-card game-card-dev">
-                <div class="dev-badge"><span class="construction-icon">&#128679;</span> In Development</div>
-                <h3>Word Finder</h3>
-                <p>Find words using the daily letters</p>
-                <div class="stats" id="word-salad-stats">
                     <span>Loading...</span>
                 </div>
             </a>
@@ -55,7 +54,7 @@
             </a>
         </div>
 
-        <div class="leaderboard" id="leaderboard">
+        <div class="leaderboard" id="wordle-leaderboard">
             <h3>Today's Wordle</h3>
             <table>
                 <thead>
@@ -64,12 +63,31 @@
                         <th>Guesses</th>
                     </tr>
                 </thead>
-                <tbody id="leaderboard-body">
+                <tbody id="wordle-leaderboard-body">
                     <tr><td colspan="2">Loading...</td></tr>
                 </tbody>
             </table>
             <div class="arena-link">
                 <a href="/games/wordle-arena.html" class="btn btn-secondary">Wordle Arena</a>
+            </div>
+        </div>
+
+        <div class="leaderboard" id="word-finder-leaderboard">
+            <h3>Today's Word Finder</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Score</th>
+                        <th>Words</th>
+                    </tr>
+                </thead>
+                <tbody id="word-finder-leaderboard-body">
+                    <tr><td colspan="3">Loading...</td></tr>
+                </tbody>
+            </table>
+            <div class="arena-link">
+                <a href="/games/word-salad-arena.html" class="btn btn-secondary">Word Finder Arena</a>
             </div>
         </div>
     </div>
