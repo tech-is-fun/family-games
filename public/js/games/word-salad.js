@@ -195,9 +195,28 @@ async function checkAuth() {
     }
 }
 
-// Get today's date string
-function getTodayDate() {
+// Server's date in Vancouver timezone
+let serverTodayDate = '';
+
+// Fetch server's date (Vancouver timezone)
+async function fetchServerDate() {
+    try {
+        const res = await fetch('/api/games/wordle/word', { cache: 'no-store' });
+        if (res.ok) {
+            const data = await res.json();
+            serverTodayDate = data.date;
+            return data.date;
+        }
+    } catch (err) {
+        console.error('Failed to fetch server date:', err);
+    }
+    // Fallback to local date if server fails
     return new Date().toISOString().split('T')[0];
+}
+
+// Get today's date string (uses server date if available)
+function getTodayDate() {
+    return serverTodayDate || new Date().toISOString().split('T')[0];
 }
 
 // Get daily puzzle based on date
@@ -525,6 +544,8 @@ async function init() {
 
     document.getElementById('username').textContent = user.username;
 
+    // Fetch server date first to ensure timezone consistency
+    await fetchServerDate();
     todayDate = getTodayDate();
     currentPuzzle = getDailyPuzzle(todayDate);
 

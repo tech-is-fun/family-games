@@ -1,5 +1,6 @@
 // Arena state
 let currentDate = '';
+let serverTodayDate = ''; // Server's date in Vancouver timezone
 const maxDaysBack = 3;
 
 // Check authentication
@@ -18,9 +19,25 @@ async function checkAuth() {
     }
 }
 
-// Get today's date string
-function getTodayDate() {
+// Fetch server's date (Vancouver timezone) - must be called before using getTodayDate
+async function fetchServerDate() {
+    try {
+        const res = await fetch('/api/games/wordle/word', { cache: 'no-store' });
+        if (res.ok) {
+            const data = await res.json();
+            serverTodayDate = data.date;
+            return data.date;
+        }
+    } catch (err) {
+        console.error('Failed to fetch server date:', err);
+    }
+    // Fallback to local date if server fails
     return new Date().toISOString().split('T')[0];
+}
+
+// Get today's date string (uses server date)
+function getTodayDate() {
+    return serverTodayDate || new Date().toISOString().split('T')[0];
 }
 
 // Format date for display
@@ -200,6 +217,8 @@ async function init() {
     const user = await checkAuth();
     if (user) {
         document.getElementById('username').textContent = user.username;
+        // Fetch server date first to ensure timezone consistency
+        await fetchServerDate();
         currentDate = getTodayDate();
         updateNavigation();
         loadArenaResults(currentDate);

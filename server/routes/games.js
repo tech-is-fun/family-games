@@ -16,7 +16,8 @@ const {
     getFamilyPhotoMysteryResults,
     getStarterWord,
     setStarterWord,
-    getRecentStarterWords
+    getRecentStarterWords,
+    getNytWordleWord
 } = require('../db');
 
 // Load photo puzzles and wordle words
@@ -122,11 +123,38 @@ router.get('/leaderboard/:game', async (req, res) => {
     }
 });
 
-// Get today's wordle word (server-side determination using UTC)
-router.get('/wordle/word', requireAuth, (req, res) => {
-    const date = getVancouverDateString();
-    const word = getDailyWordleWord(date);
-    res.json({ date, word });
+// Get today's wordle word (server-side determination)
+// Only returns the NYT word - game is not available until word is fetched
+router.get('/wordle/word', requireAuth, async (req, res) => {
+    try {
+        const date = getVancouverDateString();
+
+        // Try to get the NYT word
+        const nytWord = await getNytWordleWord(date);
+        if (nytWord && nytWord.word) {
+            return res.json({
+                date,
+                word: nytWord.word.toUpperCase(),
+                source: nytWord.source || 'nyt',
+                ready: true
+            });
+        }
+
+        // NYT word not available yet
+        res.json({
+            date,
+            ready: false,
+            message: "Today's Wordle is not ready yet. The NYT word is fetched daily at 5am PST. Please check back later."
+        });
+    } catch (err) {
+        console.error('Get wordle word error:', err);
+        const date = getVancouverDateString();
+        res.json({
+            date,
+            ready: false,
+            message: "Unable to load today's Wordle. Please try again later."
+        });
+    }
 });
 
 // Get starter word for today
@@ -477,6 +505,32 @@ router.get('/photo-mystery/arena', requireAuth, async (req, res) => {
     } catch (err) {
         console.error('Get photo mystery arena results error:', err);
         res.status(500).json({ error: 'Failed to get arena results' });
+    }
+});
+
+// Manual trigger to fetch NYT Wordle word (for testing/admin)
+router.post('/wordle/fetch-nyt', requireAuth, async (req, res) => {
+    try {
+        const { manualFetch } = require('../nyt-wordle-fetcher');
+        const date = req.body.date || getVancouverDateString();
+
+        const result = await manualFetch(date);
+        if (result) {
+            res.json({
+                success: true,
+                date: result.date,
+                word: result.word.toUpperCase(),
+                source: result.source
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                error: 'Could not fetch NYT Wordle word from any source'
+            });
+        }
+    } catch (err) {
+        console.error('Manual NYT fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch NYT word' });
     }
 });
 

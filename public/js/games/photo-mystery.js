@@ -1,8 +1,8 @@
 // Photo Mystery Game
 
-// Blur levels (in pixels) - starts very blurry, reduces with each wrong guess
-const BLUR_LEVELS = [40, 30, 20, 10, 5, 0];
-const BLUR_LABELS = ['Very Blurry', 'Blurry', 'Somewhat Clear', 'Getting Clear', 'Almost Clear', 'Revealed'];
+// Blur levels (in pixels) - starts somewhat blurry, reduces with each wrong guess
+const BLUR_LEVELS = [20, 15, 10, 5, 2, 0];
+const BLUR_LABELS = ['Blurry', 'Getting Clearer', 'Somewhat Clear', 'Almost Clear', 'Nearly There', 'Revealed'];
 const MAX_GUESSES = 6;
 
 // Game state

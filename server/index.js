@@ -6,6 +6,7 @@ const pgSession = require('connect-pg-simple')(session);
 const path = require('path');
 const { pool, initializeDatabase } = require('./db');
 const apiRouter = require('./routes/api');
+const { startCronJob: startNytWordleFetcher } = require('./nyt-wordle-fetcher');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -82,6 +83,8 @@ async function start() {
         await initializeDatabase();
         app.listen(PORT, () => {
             console.log(`Server running on http://localhost:${PORT}`);
+            // Start the NYT Wordle word fetcher cron job
+            startNytWordleFetcher();
         });
     } catch (err) {
         console.error('Failed to start server:', err);

@@ -25,6 +25,53 @@ async function loadStats() {
     } catch (err) {
         console.error('Failed to load stats:', err);
     }
+
+    // Also load today's Word Finder status separately
+    loadTodayWordFinderStatus();
+}
+
+// Load today's Word Finder status
+async function loadTodayWordFinderStatus() {
+    try {
+        // Get server date first
+        const dateRes = await fetch('/api/games/wordle/word', { cache: 'no-store' });
+        if (!dateRes.ok) return;
+        const dateData = await dateRes.json();
+        const todayDate = dateData.date;
+
+        // Get today's Word Finder result
+        const res = await fetch(`/api/games/word-salad/daily?date=${todayDate}`);
+        if (res.ok) {
+            const data = await res.json();
+            const wordSaladEl = document.getElementById('word-salad-stats');
+
+            if (data.result && data.result.details) {
+                const details = typeof data.result.details === 'string'
+                    ? JSON.parse(data.result.details)
+                    : data.result.details;
+
+                const score = details.score || 0;
+                const wordCount = (details.words || []).length;
+                const isDone = details.done || false;
+
+                if (isDone) {
+                    wordSaladEl.innerHTML = `
+                        <span>Today: ${score} pts</span>
+                        <span>${wordCount} words</span>
+                        <span style="color: var(--success);">Done!</span>
+                    `;
+                } else {
+                    wordSaladEl.innerHTML = `
+                        <span>Today: ${score} pts</span>
+                        <span>${wordCount} words</span>
+                        <span style="color: var(--primary);">In progress</span>
+                    `;
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load Word Finder status:', err);
+    }
 }
 
 // Display stats on game cards

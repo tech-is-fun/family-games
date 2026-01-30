@@ -82,6 +82,17 @@ async function initializeDatabase() {
             )
         `);
 
+        // Create daily NYT wordle words table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS daily_nyt_wordle (
+                id SERIAL PRIMARY KEY,
+                date DATE UNIQUE NOT NULL,
+                word VARCHAR(5) NOT NULL,
+                source VARCHAR(100),
+                fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         console.log('Database tables initialized');
     } finally {
         client.release();
@@ -389,6 +400,26 @@ async function updateUserPassword(userId, passwordHash) {
     );
 }
 
+// Daily NYT Wordle functions
+async function getNytWordleWord(date) {
+    const result = await pool.query(
+        'SELECT * FROM daily_nyt_wordle WHERE date = $1',
+        [date]
+    );
+    return result.rows[0];
+}
+
+async function saveNytWordleWord(date, word, source) {
+    const result = await pool.query(
+        `INSERT INTO daily_nyt_wordle (date, word, source)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (date) DO UPDATE SET word = $2, source = $3, fetched_at = CURRENT_TIMESTAMP
+         RETURNING *`,
+        [date, word.toLowerCase(), source]
+    );
+    return result.rows[0];
+}
+
 module.exports = {
     pool,
     initializeDatabase,
@@ -414,5 +445,7 @@ module.exports = {
     createPasswordResetToken,
     getPasswordResetToken,
     markTokenAsUsed,
-    updateUserPassword
+    updateUserPassword,
+    getNytWordleWord,
+    saveNytWordleWord
 };

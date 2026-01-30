@@ -422,14 +422,17 @@ async function fetchDailyWord() {
         const res = await fetch('/api/games/wordle/word', { cache: 'no-store' });
         if (res.ok) {
             const data = await res.json();
-            return { date: data.date, word: data.word };
+            if (data.ready === false) {
+                // NYT word not available yet
+                return { date: data.date, ready: false, message: data.message };
+            }
+            return { date: data.date, word: data.word, ready: true };
         }
     } catch (err) {
         console.error('Failed to fetch daily word from server:', err);
     }
-    // Fallback to client-side calculation if server fails
-    const date = getTodayDate();
-    return { date, word: getDailyWordFallback(date) };
+    // Server error - game not available
+    return { date: null, ready: false, message: 'Unable to connect to server. Please try again later.' };
 }
 
 // DOM elements
@@ -444,6 +447,32 @@ const messageEl = document.getElementById('message');
 function showMessage(text, type = '') {
     messageEl.textContent = text;
     messageEl.className = 'wordle-message ' + type;
+}
+
+// Show game not ready message
+function showGameNotReady(message) {
+    const container = document.querySelector('.wordle-container') || document.querySelector('.container');
+    if (container) {
+        // Hide keyboard when game not ready
+        if (keyboard) keyboard.style.display = 'none';
+
+        // Show not ready message
+        modalTitle.textContent = 'Wordle Not Ready';
+        modalMessage.innerHTML = `
+            <p>${message}</p>
+            <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--gray-600);">
+                The daily word is fetched from NYT at 5:00 AM PST.
+            </p>
+        `;
+        modal.classList.add('show');
+
+        // Change the close button to refresh
+        const closeBtn = document.getElementById('close-modal-btn');
+        if (closeBtn) {
+            closeBtn.textContent = 'Refresh';
+            closeBtn.onclick = () => window.location.reload();
+        }
+    }
 }
 
 // Check if current word is valid and show feedback
@@ -764,6 +793,15 @@ function applyStarterWord(word) {
 async function startGame() {
     // Fetch word from server (ensures consistent daily word)
     const dailyData = await fetchDailyWord();
+
+    // Check if game is ready (NYT word available)
+    if (!dailyData.ready) {
+        gameOver = true; // Block the game
+        initBoard();
+        showGameNotReady(dailyData.message || "Today's Wordle is not ready yet. Please check back later.");
+        return;
+    }
+
     todayDate = dailyData.date;
     targetWord = dailyData.word;
 

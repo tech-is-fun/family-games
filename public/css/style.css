@@ -273,6 +273,16 @@ body {
     border-color: #f4d03f;
 }
 
+/* Word Finder card - light blue */
+.game-card-word-finder {
+    background: #e8f4fd;
+    border: 2px solid #a8d4f0;
+}
+
+.game-card-word-finder:hover {
+    border-color: #5bb5e0;
+}
+
 /* In-development game cards - light grey */
 .game-card-dev {
     background: #f8f9fa;
