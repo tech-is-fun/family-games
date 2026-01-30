@@ -396,6 +396,7 @@ let gameOver = false;
 let guesses = [];
 let todayCompleted = false;
 let todayDate = '';
+let waitingForStarter = false; // Block input while applying starter word
 
 // Get today's date string (YYYY-MM-DD) - used as fallback
 function getTodayDate() {
@@ -611,6 +612,8 @@ async function checkStarterWord() {
 // Show starter word selection modal
 function showStarterModal(suggestions) {
     isSelectingStarter = false;
+    customStarterInput.value = ''; // Clear any previous input
+    starterError.style.display = 'none';
     suggestionButtons.innerHTML = '';
     suggestions.forEach(word => {
         const btn = document.createElement('button');
@@ -661,17 +664,21 @@ async function selectStarterWord(word) {
         if (data.success) {
             // First user chose the starter word - apply it to their game too
             starterModal.classList.remove('show');
+            waitingForStarter = true;
             showMessage(`You set today's starter word: ${data.word}`, 'valid');
             setTimeout(() => {
                 applyStarterWord(data.word);
-            }, 4000);
+                waitingForStarter = false;
+            }, 2000);
         } else if (data.alreadySet) {
             // Someone else already set it while this user was choosing - apply it
             starterModal.classList.remove('show');
-            showMessage(`${data.chosenBy} chose today's starter word: ${data.word}`, 'valid');
+            waitingForStarter = true;
+            showMessage(`${data.chosenBy} already chose: ${data.word}`, 'valid');
             setTimeout(() => {
                 applyStarterWord(data.word);
-            }, 4000);
+                waitingForStarter = false;
+            }, 2000);
         } else if (data.error) {
             showStarterError(data.error);
             isSelectingStarter = false;
@@ -699,6 +706,8 @@ async function selectStarterWord(word) {
 function showStarterError(message) {
     starterError.textContent = message;
     starterError.style.display = 'block';
+    customStarterInput.value = ''; // Clear invalid input
+    customStarterInput.focus();
     setTimeout(() => {
         starterError.style.display = 'none';
     }, 3000);
@@ -706,29 +715,49 @@ function showStarterError(message) {
 
 // Apply starter word as first guess
 function applyStarterWord(word) {
-    if (!word || word.length !== 5) {
-        console.error('Invalid starter word:', word);
-        return;
-    }
-
-    // Ensure we're at the start of the game
-    currentRow = 0;
-    currentCol = 0;
-
-    // Fill in the first row with the starter word
-    for (let i = 0; i < 5; i++) {
-        const cell = document.getElementById(`cell-0-${i}`);
-        if (!cell) {
-            console.error('Cell not found:', `cell-0-${i}`);
+    try {
+        if (!word || word.length !== 5) {
+            console.error('Invalid starter word:', word);
+            showMessage('Error applying starter word', 'error');
             return;
         }
-        cell.textContent = word[i];
-        cell.classList.add('filled');
-    }
-    currentCol = 5;
 
-    // Auto-submit the starter word
-    submitGuess();
+        // Ensure we're at the start of the game
+        currentRow = 0;
+        currentCol = 0;
+
+        // Clear any existing content in row 0
+        for (let i = 0; i < 5; i++) {
+            const cell = document.getElementById(`cell-0-${i}`);
+            if (!cell) {
+                console.error('Cell not found:', `cell-0-${i}`);
+                showMessage('Error applying starter word', 'error');
+                return;
+            }
+            cell.textContent = '';
+            cell.classList.remove('filled', 'correct', 'present', 'absent');
+        }
+
+        // Fill in the first row with the starter word
+        for (let i = 0; i < 5; i++) {
+            const cell = document.getElementById(`cell-0-${i}`);
+            cell.textContent = word[i];
+            cell.classList.add('filled');
+        }
+        currentCol = 5;
+
+        // Temporarily allow submission even if waitingForStarter
+        const wasWaiting = waitingForStarter;
+        waitingForStarter = false;
+
+        // Auto-submit the starter word
+        submitGuess();
+
+        // Note: waitingForStarter is reset by the caller after this function
+    } catch (err) {
+        console.error('Error applying starter word:', err);
+        showMessage('Error applying starter word', 'error');
+    }
 }
 
 // Start new game (daily)
@@ -760,10 +789,12 @@ async function startGame() {
         if (starterData) {
             if (starterData.hasStarter) {
                 // Apply existing starter word - show who chose it
-                showMessage(`${starterData.chosenBy} chose today's starter word: ${starterData.word}`, 'valid');
+                waitingForStarter = true;
+                showMessage(`${starterData.chosenBy} chose today's starter: ${starterData.word}`, 'valid');
                 setTimeout(() => {
                     applyStarterWord(starterData.word);
-                }, 4000);
+                    waitingForStarter = false;
+                }, 2000);
             } else {
                 // Show modal to pick starter word
                 showStarterModal(starterData.suggestions);
@@ -777,7 +808,7 @@ async function startGame() {
 
 // Add letter to current row
 function addLetter(letter) {
-    if (gameOver || currentCol >= 5) return;
+    if (gameOver || waitingForStarter || currentCol >= 5) return;
 
     const cell = document.getElementById(`cell-${currentRow}-${currentCol}`);
     cell.textContent = letter;
@@ -789,7 +820,7 @@ function addLetter(letter) {
 
 // Remove last letter
 function removeLetter() {
-    if (gameOver || currentCol <= 0) return;
+    if (gameOver || waitingForStarter || currentCol <= 0) return;
 
     currentCol--;
     const cell = document.getElementById(`cell-${currentRow}-${currentCol}`);
@@ -801,7 +832,7 @@ function removeLetter() {
 
 // Submit guess
 function submitGuess() {
-    if (gameOver || currentCol < 5) return;
+    if (gameOver || waitingForStarter || currentCol < 5) return;
 
     // Get current guess
     let guess = '';
