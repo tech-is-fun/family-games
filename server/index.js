@@ -4,6 +4,7 @@ const express = require('express');
 const session = require('express-session');
 const pgSession = require('connect-pg-simple')(session);
 const path = require('path');
+const cron = require('node-cron');
 const { pool, initializeDatabase } = require('./db');
 const apiRouter = require('./routes/api');
 const { startCronJob: startNytWordleFetcher } = require('./nyt-wordle-fetcher');
@@ -37,6 +38,11 @@ app.use(session({
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     }
 }));
+
+// Health check endpoint (for keep-alive pings)
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // API routes
 app.use('/api', apiRouter);
@@ -77,6 +83,29 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
+// Keep-alive ping to prevent Render from sleeping
+function startKeepAlive() {
+    const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
+
+    if (RENDER_URL && process.env.NODE_ENV === 'production') {
+        // Ping every 5 minutes to keep the server alive
+        cron.schedule('*/5 * * * *', async () => {
+            try {
+                const fetch = require('node-fetch');
+                const response = await fetch(`${RENDER_URL}/health`);
+                if (response.ok) {
+                    console.log(`Keep-alive ping successful at ${new Date().toISOString()}`);
+                }
+            } catch (err) {
+                console.error('Keep-alive ping failed:', err.message);
+            }
+        });
+        console.log('Keep-alive pinger started (every 5 minutes)');
+    } else {
+        console.log('Keep-alive disabled (not in production or RENDER_EXTERNAL_URL not set)');
+    }
+}
+
 // Initialize database and start server
 async function start() {
     try {
@@ -85,6 +114,8 @@ async function start() {
             console.log(`Server running on http://localhost:${PORT}`);
             // Start the NYT Wordle word fetcher cron job
             startNytWordleFetcher();
+            // Start keep-alive pinger for Render
+            startKeepAlive();
         });
     } catch (err) {
         console.error('Failed to start server:', err);

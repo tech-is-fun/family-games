@@ -14,10 +14,28 @@ let todayCompleted = false;
 let todayDate = '';
 let won = false;
 
-// Get today's date string (YYYY-MM-DD)
+// Server's date in Vancouver timezone
+let serverTodayDate = '';
+
+// Fetch server's date (Vancouver timezone)
+async function fetchServerDate() {
+    try {
+        const res = await fetch('/api/games/wordle/word', { cache: 'no-store' });
+        if (res.ok) {
+            const data = await res.json();
+            serverTodayDate = data.date;
+            return data.date;
+        }
+    } catch (err) {
+        console.error('Failed to fetch server date:', err);
+    }
+    // Fallback to local date if server fails
+    return new Date().toISOString().split('T')[0];
+}
+
+// Get today's date string (uses server date)
 function getTodayDate() {
-    const now = new Date();
-    return now.toISOString().split('T')[0];
+    return serverTodayDate || new Date().toISOString().split('T')[0];
 }
 
 // DOM elements
@@ -288,6 +306,8 @@ async function init() {
     const user = await checkAuth();
     if (user) {
         document.getElementById('username').textContent = user.username;
+        // Fetch server date first to ensure timezone consistency
+        await fetchServerDate();
         todayDate = getTodayDate();
         await loadDailyPuzzle();
         guessInput.focus();
