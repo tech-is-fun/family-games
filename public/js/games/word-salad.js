@@ -89,6 +89,15 @@ const VALID_WORDS = new Set([
 
     // Additional words and plurals
     'wiener', 'wieners', 'sweet', 'sweets', 'treats', 'snacks', 'cakes', 'pies', 'tarts', 'buns', 'rolls',
+
+    // Missing common 3-letter words
+    'awe', 'axe', 'aye', 'bye', 'din', 'doe', 'ewe', 'fen', 'hoe', 'ore', 'ova', 'pea', 'rye', 'sue', 'tee', 'vie', 'wee',
+
+    // Missing common 4-letter words
+    'acne', 'bale', 'bane', 'cane', 'coke', 'dale', 'dote', 'gape', 'hone', 'lame', 'lyre', 'mane', 'mare', 'mote', 'nape', 'pyre', 'rile', 'rote', 'tyre', 'wane', 'ware', 'wile',
+
+    // Missing common 5-letter words
+    'guile', 'maple', 'oaken', 'swine', 'twine', 'agile', 'aisle', 'algae', 'anime', 'atone', 'azure', 'berth', 'binge', 'biome', 'budge', 'canoe', 'carve', 'chafe', 'chime', 'chore', 'chute', 'cigar', 'cider', 'civic', 'crave', 'craze', 'crone', 'demur', 'deter', 'dirge', 'dodge', 'drape', 'drone', 'dunce', 'dwelt', 'eerie', 'evade', 'evoke', 'exude', 'feign', 'fibre', 'flair', 'flare', 'flora', 'forge', 'forte', 'frail', 'gaunt', 'genre', 'glare', 'glaze', 'gleam', 'glide', 'gnash', 'gouge', 'grape', 'grate', 'graze', 'grief', 'grime', 'gripe', 'grope', 'grove', 'guava', 'haven', 'hedge', 'heist', 'hinge', 'horde', 'hyena', 'infer', 'joust', 'knave', 'lapse', 'ledge', 'lithe', 'lodge', 'lunge', 'maize', 'mange', 'melee', 'merge', 'mince', 'mitre', 'moose', 'morph', 'morse', 'mourn', 'nasal', 'naval', 'niche', 'nudge', 'olive', 'ombre', 'opine', 'ounce', 'parse', 'paste', 'pause', 'payee', 'penal', 'penne', 'pique', 'plaid', 'plait', 'plume', 'poach', 'poise', 'preen', 'prime', 'prude', 'purge', 'purse', 'qualm', 'quash', 'quota', 'rebut', 'reign', 'rogue', 'saute', 'scald', 'scone', 'scope', 'scour', 'seize', 'sever', 'shade', 'shale', 'shame', 'shire', 'siege', 'sieve', 'since', 'skate', 'slate', 'sleek', 'sleet', 'slime', 'sling', 'slope', 'smear', 'smite', 'snide', 'snore', 'sober', 'spade', 'spare', 'spate', 'spice', 'spike', 'spine', 'spire', 'spite', 'spore', 'spree', 'stale', 'stare', 'state', 'stave', 'steed', 'steer', 'stile', 'stoic', 'stoke', 'stone', 'stove', 'strut', 'suave', 'surge', 'swore', 'taupe', 'tease', 'tempo', 'terse', 'thane', 'theme', 'thorn', 'thyme', 'tiara', 'tithe', 'torso', 'trace', 'trawl', 'trice', 'tripe', 'trove', 'truce', 'tulle', 'twang', 'udder', 'ulcer', 'undue', 'unite', 'untie', 'usurp', 'utile', 'vague', 'valor', 'valve', 'vaunt', 'verge', 'verse', 'vigil', 'voile', 'vouch', 'wadge', 'waive', 'waste', 'weave', 'wedge', 'whale', 'whine', 'whose', 'wince', 'woken', 'woven', 'wreak', 'wrest', 'write', 'yearn',
     'aces', 'acts', 'adds', 'ages', 'aids', 'aims', 'airs', 'ants', 'apes', 'arcs', 'arks', 'arms', 'arts',
     'bags', 'bans', 'bars', 'bats', 'bays', 'beds', 'bees', 'bets', 'bids', 'bins', 'bits', 'bows', 'boys', 'buds', 'bugs', 'buses',
     'cabs', 'cans', 'caps', 'cars', 'cats', 'cods', 'cots', 'cows', 'cubs', 'cups', 'cuts',
