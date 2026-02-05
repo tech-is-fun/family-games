@@ -1118,18 +1118,47 @@ body {
     margin-bottom: 0.5rem;
 }
 
+.crossword-clue-nav {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-bottom: 0.75rem;
+}
+
+.clue-nav-btn {
+    background: var(--white);
+    border: none;
+    border-radius: 8px 0 0 8px;
+    padding: 0 0.75rem;
+    font-size: 1.1rem;
+    color: var(--primary);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+}
+
+.clue-nav-btn:last-child {
+    border-radius: 0 8px 8px 0;
+}
+
+.clue-nav-btn:active {
+    background: var(--gray-100);
+}
+
 .crossword-current-clue {
     text-align: center;
-    padding: 0.5rem 1rem;
-    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
     background: var(--white);
-    border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     font-weight: 500;
     min-height: 2.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex: 1;
 }
 
 .crossword-grid {
@@ -1504,10 +1533,18 @@ body {
         margin-bottom: 0.25rem;
     }
 
+    .crossword-clue-nav {
+        margin-bottom: 0.5rem;
+    }
+
+    .clue-nav-btn {
+        padding: 0 0.6rem;
+        font-size: 1.25rem;
+    }
+
     .crossword-current-clue {
         font-size: 0.85rem;
-        padding: 0.375rem 0.75rem;
-        margin-bottom: 0.5rem;
+        padding: 0.375rem 0.5rem;
     }
 
     .crossword-grid {

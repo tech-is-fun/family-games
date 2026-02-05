@@ -23,9 +23,10 @@ const acrossCluesEl = document.getElementById('across-clues');
 const downCluesEl = document.getElementById('down-clues');
 const modal = document.getElementById('game-modal');
 
-// Mobile: prevent keyboard-open scroll jumps
-// When an input is focused, the browser tries to scroll it into view.
-// We lock scroll position to prevent that.
+// Mobile: briefly prevent keyboard-open scroll jumps
+// When focus moves between inputs, the browser tries to scroll.
+// We lock scroll for a short window to absorb the auto-scroll, then release.
+let scrollLockTimer = null;
 let scrollLocked = false;
 let lockedScrollY = 0;
 
@@ -33,24 +34,14 @@ function lockScroll() {
     if (window.innerWidth > 600) return;
     scrollLocked = true;
     lockedScrollY = window.scrollY;
+    // Release after 400ms so the user can still scroll intentionally
+    clearTimeout(scrollLockTimer);
+    scrollLockTimer = setTimeout(() => { scrollLocked = false; }, 400);
 }
 
 function unlockScroll() {
     scrollLocked = false;
-}
-
-// Restore scroll position if the browser tries to jump
-if ('visualViewport' in window) {
-    window.visualViewport.addEventListener('resize', () => {
-        if (scrollLocked) {
-            window.scrollTo(0, lockedScrollY);
-        }
-    });
-    window.visualViewport.addEventListener('scroll', () => {
-        if (scrollLocked) {
-            window.scrollTo(0, lockedScrollY);
-        }
-    });
+    clearTimeout(scrollLockTimer);
 }
 
 window.addEventListener('scroll', () => {
@@ -640,10 +631,53 @@ function checkWord() {
     });
 }
 
-// Wire up hint buttons
+// Wire up hint buttons — prevent focus steal on mobile so keyboard stays open
+['reveal-letter-btn', 'reveal-word-btn', 'check-word-btn'].forEach(id => {
+    document.getElementById(id).addEventListener('mousedown', (e) => e.preventDefault());
+});
 document.getElementById('reveal-letter-btn').addEventListener('click', revealLetter);
 document.getElementById('reveal-word-btn').addEventListener('click', revealWord);
 document.getElementById('check-word-btn').addEventListener('click', checkWord);
+
+// Wire up clue navigation buttons
+// Use mousedown+preventDefault to keep focus on the grid input (don't dismiss keyboard)
+document.getElementById('prev-clue-btn').addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    if (!gameOver) cycleToPrevClue();
+});
+document.getElementById('next-clue-btn').addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    if (!gameOver) cycleToNextClue();
+});
+// Also handle touch to prevent any default behavior
+document.getElementById('prev-clue-btn').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (!gameOver) cycleToPrevClue();
+});
+document.getElementById('next-clue-btn').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (!gameOver) cycleToNextClue();
+});
+
+// Tapping the current clue bar toggles direction (like tapping the selected cell)
+currentClueEl.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    if (gameOver || selectedRow < 0) return;
+    const otherDir = direction === 'across' ? 'down' : 'across';
+    if (getWordForCell(selectedRow, selectedCol, otherDir)) {
+        direction = otherDir;
+        updateHighlights();
+    }
+});
+currentClueEl.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (gameOver || selectedRow < 0) return;
+    const otherDir = direction === 'across' ? 'down' : 'across';
+    if (getWordForCell(selectedRow, selectedCol, otherDir)) {
+        direction = otherDir;
+        updateHighlights();
+    }
+});
 
 // Check if puzzle is complete
 function checkCompletion() {
