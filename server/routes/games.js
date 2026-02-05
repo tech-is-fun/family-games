@@ -17,12 +17,16 @@ const {
     getStarterWord,
     setStarterWord,
     getRecentStarterWords,
-    getNytWordleWord
+    getNytWordleWord,
+    getDailyMiniCrosswordResult,
+    getFamilyMiniCrosswordResults,
+    getNytMiniCrossword
 } = require('../db');
 
-// Load photo puzzles and wordle words
+// Load photo puzzles, wordle words, and mini crossword puzzles
 const photoPuzzles = require('../data/photo-puzzles.json');
 const wordleWords = require('../data/wordle-words.json');
+const miniCrosswordPuzzles = require('../data/mini-crossword-puzzles.json');
 
 // Hash function for daily puzzle selection
 function hashDate(dateStr) {
@@ -531,6 +535,138 @@ router.post('/wordle/fetch-nyt', requireAuth, async (req, res) => {
     } catch (err) {
         console.error('Manual NYT fetch error:', err);
         res.status(500).json({ error: 'Failed to fetch NYT word' });
+    }
+});
+
+// Manual trigger to fetch NYT Mini Crossword (for testing/admin)
+router.post('/mini-crossword/fetch-nyt', requireAuth, async (req, res) => {
+    try {
+        const { manualFetch } = require('../nyt-crossword-fetcher');
+        const date = req.body.date || getVancouverDateString();
+
+        const result = await manualFetch(date);
+        if (result) {
+            res.json({
+                success: true,
+                date: result.date,
+                source: result.source
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                error: 'Could not fetch NYT Mini Crossword from any source'
+            });
+        }
+    } catch (err) {
+        console.error('Manual NYT mini crossword fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch NYT mini crossword' });
+    }
+});
+
+// Get daily mini crossword puzzle
+router.get('/mini-crossword/daily', requireAuth, async (req, res) => {
+    try {
+        const date = getVancouverDateString();
+
+        // Check if user has already completed today's puzzle
+        const userResult = await getDailyMiniCrosswordResult(req.session.userId, date);
+
+        // Try to get fetched NYT puzzle first, fall back to local puzzle bank
+        let puzzle;
+        const nytPuzzle = await getNytMiniCrossword(date);
+        if (nytPuzzle) {
+            puzzle = typeof nytPuzzle.puzzle === 'string' ? JSON.parse(nytPuzzle.puzzle) : nytPuzzle.puzzle;
+        } else {
+            // Fall back to local puzzle bank
+            const index = hashDate(date) % miniCrosswordPuzzles.length;
+            puzzle = miniCrosswordPuzzles[index];
+        }
+
+        const size = puzzle.grid.length;
+
+        if (userResult) {
+            res.json({
+                puzzle: {
+                    grid: puzzle.grid,
+                    clues: puzzle.clues,
+                    size
+                },
+                completed: true,
+                score: userResult.score,
+                time: userResult.details?.time,
+                date
+            });
+        } else {
+            // Don't send grid answers for active game - send blank grid structure
+            const blankGrid = puzzle.grid.map(row =>
+                row.map(cell => cell === '#' ? '#' : '')
+            );
+            res.json({
+                puzzle: {
+                    grid: blankGrid,
+                    answerGrid: puzzle.grid,
+                    clues: puzzle.clues,
+                    size
+                },
+                completed: false,
+                date
+            });
+        }
+    } catch (err) {
+        console.error('Get daily mini crossword error:', err);
+        res.status(500).json({ error: 'Failed to get daily puzzle' });
+    }
+});
+
+// Get today's family mini crossword scores for leaderboard
+router.get('/mini-crossword/today-scores', requireAuth, async (req, res) => {
+    try {
+        const date = getVancouverDateString();
+        const results = await getFamilyMiniCrosswordResults(date);
+
+        res.json({
+            date,
+            results: results.map(r => ({
+                username: r.username,
+                score: r.score,
+                time: r.details?.time,
+                playedAt: r.played_at
+            }))
+        });
+    } catch (err) {
+        console.error('Get mini crossword today scores error:', err);
+        res.status(500).json({ error: 'Failed to get today scores' });
+    }
+});
+
+// Get family mini crossword arena results
+router.get('/mini-crossword/arena', requireAuth, async (req, res) => {
+    try {
+        const { date } = req.query;
+        if (!date) {
+            return res.status(400).json({ error: 'Date is required' });
+        }
+
+        // Check if user has completed this day's puzzle
+        const userResult = await getDailyMiniCrosswordResult(req.session.userId, date);
+        if (!userResult) {
+            return res.status(403).json({ error: 'Complete today\'s puzzle first to see family results' });
+        }
+
+        // Get all family results for this date
+        const results = await getFamilyMiniCrosswordResults(date);
+
+        res.json({
+            results: results.map(r => ({
+                username: r.username,
+                score: r.score,
+                time: r.details?.time,
+                playedAt: r.played_at
+            }))
+        });
+    } catch (err) {
+        console.error('Get mini crossword arena results error:', err);
+        res.status(500).json({ error: 'Failed to get arena results' });
     }
 });
 

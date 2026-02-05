@@ -25,66 +25,15 @@ async function loadStats() {
     } catch (err) {
         console.error('Failed to load stats:', err);
     }
-
-    // Also load today's Word Finder status separately
-    loadTodayWordFinderStatus();
-}
-
-// Load today's Word Finder status
-async function loadTodayWordFinderStatus() {
-    try {
-        // Get server date first
-        const dateRes = await fetch('/api/games/wordle/word', { cache: 'no-store' });
-        if (!dateRes.ok) return;
-        const dateData = await dateRes.json();
-        const todayDate = dateData.date;
-
-        // Get today's Word Finder result
-        const res = await fetch(`/api/games/word-salad/daily?date=${todayDate}`);
-        if (res.ok) {
-            const data = await res.json();
-            const wordSaladEl = document.getElementById('word-salad-stats');
-
-            if (data.result && data.result.details) {
-                const details = typeof data.result.details === 'string'
-                    ? JSON.parse(data.result.details)
-                    : data.result.details;
-
-                const score = details.score || 0;
-                const wordCount = (details.words || []).length;
-                const isDone = details.done || false;
-
-                if (isDone) {
-                    wordSaladEl.innerHTML = `
-                        <span>Today: ${score} pts</span>
-                        <span>${wordCount} words</span>
-                        <span style="color: var(--success);">Done!</span>
-                    `;
-                } else {
-                    wordSaladEl.innerHTML = `
-                        <span>Today: ${score} pts</span>
-                        <span>${wordCount} words</span>
-                        <span style="color: var(--primary);">In progress</span>
-                    `;
-                }
-            }
-        }
-    } catch (err) {
-        console.error('Failed to load Word Finder status:', err);
-    }
 }
 
 // Display stats on game cards
 function displayStats(stats) {
     const wordleStats = stats.find(s => s.game_name === 'wordle');
-    const sudokuStats = stats.find(s => s.game_name === 'sudoku');
-    const wordSaladStats = stats.find(s => s.game_name === 'word-salad');
-    const photoMysteryStats = stats.find(s => s.game_name === 'photo-mystery');
+    const miniCrosswordStats = stats.find(s => s.game_name === 'mini-crossword');
 
     const wordleEl = document.getElementById('wordle-stats');
-    const sudokuEl = document.getElementById('sudoku-stats');
-    const wordSaladEl = document.getElementById('word-salad-stats');
-    const photoMysteryEl = document.getElementById('photo-mystery-stats');
+    const miniCrosswordEl = document.getElementById('mini-crossword-stats');
 
     if (wordleStats) {
         wordleEl.innerHTML = `
@@ -96,33 +45,26 @@ function displayStats(stats) {
         wordleEl.innerHTML = '<span>No games yet</span>';
     }
 
-    if (sudokuStats) {
-        sudokuEl.innerHTML = `
-            <span>Played: ${sudokuStats.games_played}</span>
-            <span>Won: ${sudokuStats.games_won}</span>
-        `;
-    } else {
-        sudokuEl.innerHTML = '<span>No games yet</span>';
+    if (miniCrosswordEl) {
+        if (miniCrosswordStats) {
+            const bestTime = miniCrosswordStats.best_score;
+            const bestDisplay = bestTime ? formatTimeShort(bestTime) : '-';
+            miniCrosswordEl.innerHTML = `
+                <span>Played: ${miniCrosswordStats.games_played}</span>
+                <span>Best: ${bestDisplay}</span>
+                <span>Streak: ${miniCrosswordStats.current_streak}</span>
+            `;
+        } else {
+            miniCrosswordEl.innerHTML = '<span>No games yet</span>';
+        }
     }
+}
 
-    if (wordSaladStats) {
-        wordSaladEl.innerHTML = `
-            <span>Played: ${wordSaladStats.games_played}</span>
-            <span>Best: ${wordSaladStats.best_score || 0} pts</span>
-        `;
-    } else {
-        wordSaladEl.innerHTML = '<span>No games yet</span>';
-    }
-
-    if (photoMysteryStats) {
-        photoMysteryEl.innerHTML = `
-            <span>Played: ${photoMysteryStats.games_played}</span>
-            <span>Won: ${photoMysteryStats.games_won}</span>
-            <span>Streak: ${photoMysteryStats.current_streak}</span>
-        `;
-    } else {
-        photoMysteryEl.innerHTML = '<span>No games yet</span>';
-    }
+function formatTimeShort(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins === 0) return secs + 's';
+    return mins + ':' + (secs < 10 ? '0' : '') + secs;
 }
 
 // Load today's Wordle leaderboard
@@ -170,39 +112,36 @@ function displayWordleLeaderboard(results) {
     }).join('');
 }
 
-// Load today's Word Finder leaderboard
-async function loadWordFinderLeaderboard() {
+// Load today's Mini Crossword leaderboard
+async function loadMiniCrosswordLeaderboard() {
     try {
-        const res = await fetch('/api/games/word-salad/today-scores');
+        const res = await fetch('/api/games/mini-crossword/today-scores');
         const data = await res.json();
-        displayWordFinderLeaderboard(data.results);
+        displayMiniCrosswordLeaderboard(data.results);
     } catch (err) {
-        console.error('Failed to load Word Finder leaderboard:', err);
+        console.error('Failed to load Mini Crossword leaderboard:', err);
     }
 }
 
-// Display today's Word Finder leaderboard
-function displayWordFinderLeaderboard(results) {
-    const tbody = document.getElementById('word-finder-leaderboard-body');
+// Display today's Mini Crossword leaderboard
+function displayMiniCrosswordLeaderboard(results) {
+    const tbody = document.getElementById('mini-crossword-leaderboard-body');
 
     if (!results || results.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3">No one has played today yet</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="2">No one has played today yet</td></tr>';
         return;
     }
 
-    // Find the highest score (best performance)
-    const highestScore = Math.max(...results.map(r => r.score));
+    // Find the fastest time (lowest score)
+    const fastestTime = Math.min(...results.map(r => r.score));
 
-    // Sort by score (highest first)
-    const sorted = [...results].sort((a, b) => b.score - a.score);
-
-    tbody.innerHTML = sorted.map(player => {
-        const isHighest = player.score === highestScore;
+    // Already sorted by score ascending from server
+    tbody.innerHTML = results.map(player => {
+        const isFastest = player.score === fastestTime;
         return `
-            <tr class="${isHighest ? 'highlight-best' : ''}">
+            <tr class="${isFastest ? 'highlight-best' : ''}">
                 <td>${player.username}</td>
-                <td>${player.score}</td>
-                <td>${player.wordCount}</td>
+                <td>${formatTimeShort(player.score)}</td>
             </tr>
         `;
     }).join('');
@@ -225,7 +164,7 @@ async function init() {
         document.getElementById('username').textContent = user.username;
         loadStats();
         loadWordleLeaderboard();
-        loadWordFinderLeaderboard();
+        loadMiniCrosswordLeaderboard();
     }
 }
 

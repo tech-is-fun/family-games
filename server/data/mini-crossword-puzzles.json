@@ -1,0 +1,512 @@
+[
+  {
+    "grid": [
+      [
+        "F",
+        "L",
+        "A",
+        "R",
+        "E"
+      ],
+      [
+        "L",
+        "#",
+        "R",
+        "#",
+        "V"
+      ],
+      [
+        "A",
+        "B",
+        "I",
+        "D",
+        "E"
+      ],
+      [
+        "M",
+        "#",
+        "S",
+        "#",
+        "N"
+      ],
+      [
+        "E",
+        "R",
+        "E",
+        "C",
+        "T"
+      ]
+    ],
+    "clues": {
+      "across": {
+        "1": "Bright signal light",
+        "4": "Tolerate or stay",
+        "5": "Build or put up"
+      },
+      "down": {
+        "1": "Fire glow",
+        "2": "Get up or occur",
+        "3": "Special occasion"
+      }
+    }
+  },
+  {
+    "grid": [
+      [
+        "S",
+        "T",
+        "O",
+        "R",
+        "K"
+      ],
+      [
+        "T",
+        "#",
+        "L",
+        "#",
+        "N"
+      ],
+      [
+        "A",
+        "G",
+        "I",
+        "L",
+        "E"
+      ],
+      [
+        "R",
+        "#",
+        "V",
+        "#",
+        "L"
+      ],
+      [
+        "E",
+        "L",
+        "E",
+        "C",
+        "T"
+      ]
+    ],
+    "clues": {
+      "across": {
+        "1": "Baby-delivering bird",
+        "4": "Quick and nimble",
+        "5": "Choose by voting"
+      },
+      "down": {
+        "1": "Gaze fixedly",
+        "2": "Pizza topping",
+        "3": "Went down on one knee"
+      }
+    }
+  },
+  {
+    "grid": [
+      [
+        "G",
+        "L",
+        "A",
+        "S",
+        "S"
+      ],
+      [
+        "R",
+        "#",
+        "L",
+        "#",
+        "T"
+      ],
+      [
+        "A",
+        "B",
+        "I",
+        "D",
+        "E"
+      ],
+      [
+        "S",
+        "#",
+        "G",
+        "#",
+        "E"
+      ],
+      [
+        "P",
+        "I",
+        "N",
+        "U",
+        "P"
+      ]
+    ],
+    "clues": {
+      "across": {
+        "1": "Drinking vessel material",
+        "4": "Put up with",
+        "5": "Wall poster model"
+      },
+      "down": {
+        "1": "Seize or understand",
+        "2": "Line up properly",
+        "3": "Very sharp incline"
+      }
+    }
+  },
+  {
+    "grid": [
+      [
+        "H",
+        "E",
+        "A",
+        "R",
+        "T"
+      ],
+      [
+        "E",
+        "#",
+        "B",
+        "#",
+        "R"
+      ],
+      [
+        "A",
+        "B",
+        "O",
+        "D",
+        "E"
+      ],
+      [
+        "R",
+        "#",
+        "D",
+        "#",
+        "E"
+      ],
+      [
+        "T",
+        "R",
+        "E",
+        "N",
+        "D"
+      ]
+    ],
+    "clues": {
+      "across": {
+        "1": "Vital organ",
+        "4": "Place of residence",
+        "5": "Popular direction"
+      },
+      "down": {
+        "1": "Vital organ",
+        "2": "Home or dwelling",
+        "3": "Chased up a tree"
+      }
+    }
+  },
+  {
+    "grid": [
+      [
+        "P",
+        "L",
+        "A",
+        "I",
+        "D"
+      ],
+      [
+        "A",
+        "#",
+        "L",
+        "#",
+        "R"
+      ],
+      [
+        "R",
+        "O",
+        "G",
+        "U",
+        "E"
+      ],
+      [
+        "T",
+        "#",
+        "A",
+        "#",
+        "S"
+      ],
+      [
+        "S",
+        "T",
+        "E",
+        "P",
+        "S"
+      ]
+    ],
+    "clues": {
+      "across": {
+        "1": "Checkered pattern",
+        "4": "Scoundrel or rebel",
+        "5": "Staircase parts"
+      },
+      "down": {
+        "1": "Components or pieces",
+        "2": "Pond scum",
+        "3": "Fancy outfit"
+      }
+    }
+  },
+  {
+    "grid": [
+      [
+        "S",
+        "T",
+        "A",
+        "R",
+        "K"
+      ],
+      [
+        "M",
+        "#",
+        "R",
+        "#",
+        "N"
+      ],
+      [
+        "A",
+        "T",
+        "O",
+        "N",
+        "E"
+      ],
+      [
+        "R",
+        "#",
+        "S",
+        "#",
+        "L"
+      ],
+      [
+        "T",
+        "R",
+        "E",
+        "A",
+        "T"
+      ]
+    ],
+    "clues": {
+      "across": {
+        "1": "Bare or harsh",
+        "4": "Make amends",
+        "5": "Halloween candy goal"
+      },
+      "down": {
+        "1": "Clever or stylish",
+        "2": "Got up from bed",
+        "3": "Went down on one knee"
+      }
+    }
+  },
+  {
+    "grid": [
+      [
+        "C",
+        "H",
+        "A",
+        "I",
+        "R"
+      ],
+      [
+        "H",
+        "#",
+        "T",
+        "#",
+        "E"
+      ],
+      [
+        "A",
+        "T",
+        "O",
+        "M",
+        "S"
+      ],
+      [
+        "I",
+        "#",
+        "N",
+        "#",
+        "T"
+      ],
+      [
+        "R",
+        "E",
+        "E",
+        "L",
+        "S"
+      ]
+    ],
+    "clues": {
+      "across": {
+        "1": "Seat with a back",
+        "4": "Tiny particles",
+        "5": "Fishing rod parts"
+      },
+      "down": {
+        "1": "Seat with a back",
+        "2": "Make up for",
+        "3": "Takes a nap"
+      }
+    }
+  },
+  {
+    "grid": [
+      [
+        "T",
+        "E",
+        "E",
+        "N",
+        "S"
+      ],
+      [
+        "E",
+        "#",
+        "X",
+        "#",
+        "T"
+      ],
+      [
+        "A",
+        "B",
+        "I",
+        "D",
+        "E"
+      ],
+      [
+        "C",
+        "#",
+        "S",
+        "#",
+        "E"
+      ],
+      [
+        "H",
+        "O",
+        "T",
+        "E",
+        "L"
+      ]
+    ],
+    "clues": {
+      "across": {
+        "1": "Young people 13-19",
+        "4": "Follow the rules",
+        "5": "Place to stay overnight"
+      },
+      "down": {
+        "1": "Educate or instruct",
+        "2": "Be or live",
+        "3": "Strong metal alloy"
+      }
+    }
+  },
+  {
+    "grid": [
+      [
+        "C",
+        "H",
+        "A",
+        "L",
+        "K"
+      ],
+      [
+        "L",
+        "#",
+        "R",
+        "#",
+        "N"
+      ],
+      [
+        "U",
+        "N",
+        "I",
+        "T",
+        "E"
+      ],
+      [
+        "M",
+        "#",
+        "S",
+        "#",
+        "L"
+      ],
+      [
+        "P",
+        "L",
+        "E",
+        "A",
+        "T"
+      ]
+    ],
+    "clues": {
+      "across": {
+        "1": "Blackboard writing stick",
+        "4": "Come together",
+        "5": "Fold in a skirt"
+      },
+      "down": {
+        "1": "Group or cluster",
+        "2": "Get up or wake",
+        "3": "Bent the knee"
+      }
+    }
+  },
+  {
+    "grid": [
+      [
+        "W",
+        "H",
+        "A",
+        "L",
+        "E"
+      ],
+      [
+        "E",
+        "#",
+        "R",
+        "#",
+        "V"
+      ],
+      [
+        "A",
+        "R",
+        "E",
+        "N",
+        "A"
+      ],
+      [
+        "R",
+        "#",
+        "N",
+        "#",
+        "D"
+      ],
+      [
+        "S",
+        "T",
+        "A",
+        "G",
+        "E"
+      ]
+    ],
+    "clues": {
+      "across": {
+        "1": "Largest ocean mammal",
+        "4": "Sports venue",
+        "5": "Theater platform"
+      },
+      "down": {
+        "1": "Has on, as clothing",
+        "2": "Sports venue",
+        "3": "Dodge or avoid"
+      }
+    }
+  }
+]

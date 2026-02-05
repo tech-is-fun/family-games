@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <title>Mini Crossword - Family Games</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h1><a href="/home.html" style="text-decoration: none; color: inherit;">Family Games</a></h1>
+        <div class="user-info">
+            <span class="username" id="username"></span>
+            <button class="btn btn-secondary" id="logout-btn">Logout</button>
+        </div>
+    </nav>
+
+    <div class="crossword-container">
+        <div class="crossword-timer" id="timer">0:00</div>
+
+        <div class="crossword-current-clue" id="current-clue">Select a cell to begin</div>
+
+        <div class="crossword-grid" id="grid"></div>
+
+        <div class="crossword-hints" id="hints">
+            <button class="btn btn-hint" id="reveal-letter-btn" title="Reveal the selected letter">Reveal Letter</button>
+            <button class="btn btn-hint" id="reveal-word-btn" title="Reveal the current word">Reveal Word</button>
+            <button class="btn btn-hint" id="check-word-btn" title="Check the current word for errors">Check Word</button>
+        </div>
+
+        <div class="crossword-clues">
+            <div class="clue-panel">
+                <h4>Across</h4>
+                <div id="across-clues"></div>
+            </div>
+            <div class="clue-panel">
+                <h4>Down</h4>
+                <div id="down-clues"></div>
+            </div>
+        </div>
+
+        <div id="arena-link" class="arena-link" style="display: none;">
+            <a href="/games/mini-crossword-arena.html">See Family Results &rarr;</a>
+            <p>See how your family did!</p>
+        </div>
+    </div>
+
+    <div class="modal" id="game-modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Puzzle Complete!</h2>
+            <p id="modal-message"></p>
+            <a href="/home.html" class="btn btn-primary" style="display: inline-block; text-decoration: none;">See Family Results</a>
+            <button class="btn btn-secondary" id="close-modal-btn" style="margin-top: 0.5rem;">Close</button>
+        </div>
+    </div>
+
+    <script src="/js/games/mini-crossword.js"></script>
+</body>
+</html>

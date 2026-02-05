@@ -57,6 +57,81 @@ let todayCompleted = false;
 let todayDate = '';
 let waitingForStarter = false; // Block input while applying starter word
 
+// LocalStorage key for in-progress game
+function getProgressKey(date) {
+    return `wordle-progress-${date}`;
+}
+
+// Save in-progress game to localStorage
+function saveProgress() {
+    if (!todayDate || gameOver) return;
+    const progressData = {
+        guesses: guesses,
+        currentRow: currentRow,
+        date: todayDate
+    };
+    localStorage.setItem(getProgressKey(todayDate), JSON.stringify(progressData));
+}
+
+// Load in-progress game from localStorage
+function loadProgress() {
+    if (!todayDate) return null;
+    try {
+        const saved = localStorage.getItem(getProgressKey(todayDate));
+        if (saved) {
+            const data = JSON.parse(saved);
+            // Verify it's for today's date
+            if (data.date === todayDate && data.guesses && data.guesses.length > 0) {
+                return data;
+            }
+        }
+    } catch (err) {
+        console.error('Error loading progress from localStorage:', err);
+    }
+    return null;
+}
+
+// Clear progress from localStorage (when game is completed)
+function clearProgress() {
+    if (!todayDate) return;
+    localStorage.removeItem(getProgressKey(todayDate));
+}
+
+// Restore board from in-progress guesses (different from completed game restore)
+function restoreInProgress(savedGuesses) {
+    initBoard();
+    guesses = [];
+
+    for (let row = 0; row < savedGuesses.length; row++) {
+        const guess = savedGuesses[row];
+        guesses.push(guess);
+        const result = checkGuess(guess);
+
+        for (let col = 0; col < 5; col++) {
+            const cell = document.getElementById(`cell-${row}-${col}`);
+            cell.textContent = guess[col];
+            cell.classList.add('filled', result[col]);
+
+            // Update keyboard
+            const key = document.querySelector(`[data-key="${guess[col].toLowerCase()}"]`);
+            if (key) {
+                if (result[col] === 'correct') {
+                    key.classList.remove('present', 'absent');
+                    key.classList.add('correct');
+                } else if (result[col] === 'present' && !key.classList.contains('correct')) {
+                    key.classList.remove('absent');
+                    key.classList.add('present');
+                } else if (result[col] === 'absent' && !key.classList.contains('correct') && !key.classList.contains('present')) {
+                    key.classList.add('absent');
+                }
+            }
+        }
+    }
+
+    currentRow = savedGuesses.length;
+    currentCol = 0;
+}
+
 // Get today's date string (YYYY-MM-DD) - used as fallback
 function getTodayDate() {
     const now = new Date();
@@ -478,23 +553,33 @@ async function startGame() {
     // Check if already completed today
     const alreadyDone = await checkTodayStatus();
     if (!alreadyDone) {
-        initBoard();
-        showMessage('');
+        // Check for saved in-progress game in localStorage
+        const savedProgress = loadProgress();
+        if (savedProgress && savedProgress.guesses.length > 0) {
+            // Restore in-progress game
+            restoreInProgress(savedProgress.guesses);
+            showMessage('Game restored from where you left off', 'valid');
+            setTimeout(() => showMessage(''), 2000);
+        } else {
+            // Fresh game - initialize board and check for starter word
+            initBoard();
+            showMessage('');
 
-        // Check for starter word
-        const starterData = await checkStarterWord();
-        if (starterData) {
-            if (starterData.hasStarter) {
-                // Apply existing starter word - show who chose it
-                waitingForStarter = true;
-                showMessage(`${starterData.chosenBy} chose today's starter: ${starterData.word}`, 'valid');
-                setTimeout(() => {
-                    applyStarterWord(starterData.word);
-                    waitingForStarter = false;
-                }, 2000);
-            } else {
-                // Show modal to pick starter word
-                showStarterModal(starterData.suggestions);
+            // Check for starter word
+            const starterData = await checkStarterWord();
+            if (starterData) {
+                if (starterData.hasStarter) {
+                    // Apply existing starter word - show who chose it
+                    waitingForStarter = true;
+                    showMessage(`${starterData.chosenBy} chose today's starter: ${starterData.word}`, 'valid');
+                    setTimeout(() => {
+                        applyStarterWord(starterData.word);
+                        waitingForStarter = false;
+                    }, 2000);
+                } else {
+                    // Show modal to pick starter word
+                    showStarterModal(starterData.suggestions);
+                }
             }
         }
     }
@@ -570,15 +655,20 @@ function submitGuess() {
         }
     }
 
+    // Save progress to localStorage after each valid guess
+    saveProgress();
+
     // Check win/lose
     if (guess === targetWord) {
         gameOver = true;
+        clearProgress(); // Clear localStorage since game is complete
         modalTitle.textContent = 'You Won!';
         modalMessage.textContent = `You guessed the word in ${currentRow + 1} ${currentRow === 0 ? 'try' : 'tries'}!`;
         modal.classList.add('show');
         saveResult(true, currentRow + 1);
     } else if (currentRow >= 5) {
         gameOver = true;
+        clearProgress(); // Clear localStorage since game is complete
         modalTitle.textContent = 'Game Over';
         modalMessage.textContent = `The word was: ${targetWord}`;
         modal.classList.add('show');

@@ -8,6 +8,7 @@ const cron = require('node-cron');
 const { pool, initializeDatabase } = require('./db');
 const apiRouter = require('./routes/api');
 const { startCronJob: startNytWordleFetcher } = require('./nyt-wordle-fetcher');
+const { startCronJob: startNytCrosswordFetcher } = require('./nyt-crossword-fetcher');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -71,6 +72,13 @@ app.get('/home.html', (req, res, next) => {
     next();
 });
 
+app.get('/more-games.html', (req, res, next) => {
+    if (!req.session.userId) {
+        return res.redirect('/');
+    }
+    next();
+});
+
 app.get('/games/*', (req, res, next) => {
     if (!req.session.userId) {
         return res.redirect('/');
@@ -114,6 +122,8 @@ async function start() {
             console.log(`Server running on http://localhost:${PORT}`);
             // Start the NYT Wordle word fetcher cron job
             startNytWordleFetcher();
+            // Start the NYT Mini Crossword fetcher cron job
+            startNytCrosswordFetcher();
             // Start keep-alive pinger for Render
             startKeepAlive();
         });

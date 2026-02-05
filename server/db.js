@@ -93,6 +93,17 @@ async function initializeDatabase() {
             )
         `);
 
+        // Create daily NYT mini crossword puzzles table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS daily_nyt_crossword (
+                id SERIAL PRIMARY KEY,
+                date DATE UNIQUE NOT NULL,
+                puzzle JSONB NOT NULL,
+                source VARCHAR(100),
+                fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         console.log('Database tables initialized');
     } finally {
         client.release();
@@ -400,6 +411,33 @@ async function updateUserPassword(userId, passwordHash) {
     );
 }
 
+// Mini Crossword functions
+async function getDailyMiniCrosswordResult(userId, date) {
+    const result = await pool.query(
+        `SELECT * FROM game_results
+         WHERE user_id = $1
+         AND game_name = 'mini-crossword'
+         AND details->>'date' = $2
+         ORDER BY played_at DESC
+         LIMIT 1`,
+        [userId, date]
+    );
+    return result.rows[0];
+}
+
+async function getFamilyMiniCrosswordResults(date) {
+    const result = await pool.query(
+        `SELECT gr.*, u.username
+         FROM game_results gr
+         JOIN users u ON gr.user_id = u.id
+         WHERE gr.game_name = 'mini-crossword'
+         AND gr.details->>'date' = $1
+         ORDER BY gr.score ASC`,
+        [date]
+    );
+    return result.rows;
+}
+
 // Daily NYT Wordle functions
 async function getNytWordleWord(date) {
     const result = await pool.query(
@@ -416,6 +454,26 @@ async function saveNytWordleWord(date, word, source) {
          ON CONFLICT (date) DO UPDATE SET word = $2, source = $3, fetched_at = CURRENT_TIMESTAMP
          RETURNING *`,
         [date, word.toLowerCase(), source]
+    );
+    return result.rows[0];
+}
+
+// Daily NYT Mini Crossword functions
+async function getNytMiniCrossword(date) {
+    const result = await pool.query(
+        'SELECT * FROM daily_nyt_crossword WHERE date = $1',
+        [date]
+    );
+    return result.rows[0];
+}
+
+async function saveNytMiniCrossword(date, puzzle, source) {
+    const result = await pool.query(
+        `INSERT INTO daily_nyt_crossword (date, puzzle, source)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (date) DO UPDATE SET puzzle = $2, source = $3, fetched_at = CURRENT_TIMESTAMP
+         RETURNING *`,
+        [date, JSON.stringify(puzzle), source]
     );
     return result.rows[0];
 }
@@ -447,5 +505,9 @@ module.exports = {
     markTokenAsUsed,
     updateUserPassword,
     getNytWordleWord,
-    saveNytWordleWord
+    saveNytWordleWord,
+    getDailyMiniCrosswordResult,
+    getFamilyMiniCrosswordResults,
+    getNytMiniCrossword,
+    saveNytMiniCrossword
 };
