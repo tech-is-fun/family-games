@@ -23,6 +23,42 @@ const acrossCluesEl = document.getElementById('across-clues');
 const downCluesEl = document.getElementById('down-clues');
 const modal = document.getElementById('game-modal');
 
+// Mobile: prevent keyboard-open scroll jumps
+// When an input is focused, the browser tries to scroll it into view.
+// We lock scroll position to prevent that.
+let scrollLocked = false;
+let lockedScrollY = 0;
+
+function lockScroll() {
+    if (window.innerWidth > 600) return;
+    scrollLocked = true;
+    lockedScrollY = window.scrollY;
+}
+
+function unlockScroll() {
+    scrollLocked = false;
+}
+
+// Restore scroll position if the browser tries to jump
+if ('visualViewport' in window) {
+    window.visualViewport.addEventListener('resize', () => {
+        if (scrollLocked) {
+            window.scrollTo(0, lockedScrollY);
+        }
+    });
+    window.visualViewport.addEventListener('scroll', () => {
+        if (scrollLocked) {
+            window.scrollTo(0, lockedScrollY);
+        }
+    });
+}
+
+window.addEventListener('scroll', () => {
+    if (scrollLocked) {
+        window.scrollTo(0, lockedScrollY);
+    }
+});
+
 // Auth check
 async function checkAuth() {
     try {
@@ -190,11 +226,14 @@ function renderGrid() {
                 input.value = userGrid[r][c] || '';
                 input.readOnly = gameOver;
 
+                input.enterKeyHint = 'next';
+
                 input.addEventListener('focus', () => onCellFocus(r, c));
                 input.addEventListener('click', (e) => {
                     e.stopPropagation();
                     onCellClick(r, c);
                 });
+                input.addEventListener('blur', () => unlockScroll());
                 input.addEventListener('input', (e) => onCellInput(e, r, c));
                 input.addEventListener('keydown', (e) => onCellKeydown(e, r, c));
 
@@ -285,7 +324,10 @@ function updateHighlights() {
     const clueItem = document.querySelector(`.clue-item[data-direction="${direction}"][data-num="${clueNum}"]`);
     if (clueItem) {
         clueItem.classList.add('active');
-        clueItem.scrollIntoView({ block: 'nearest' });
+        // Only scroll clue into view on desktop to avoid mobile jumpiness
+        if (window.innerWidth > 600) {
+            clueItem.scrollIntoView({ block: 'nearest' });
+        }
     }
 
     // Update current clue bar
@@ -298,6 +340,7 @@ function updateHighlights() {
 // Cell event handlers
 function onCellFocus(r, c) {
     if (gameOver) return;
+    lockScroll();
     if (selectedRow === r && selectedCol === c) return;
     selectedRow = r;
     selectedCol = c;
@@ -306,6 +349,7 @@ function onCellFocus(r, c) {
 
 function onCellClick(r, c) {
     if (gameOver) return;
+    lockScroll();
     if (selectedRow === r && selectedCol === c) {
         // Toggle direction
         const otherDir = direction === 'across' ? 'down' : 'across';
@@ -327,7 +371,7 @@ function onCellClick(r, c) {
 
     // Focus the input
     const input = gridEl.querySelector(`input[data-row="${r}"][data-col="${c}"]`);
-    if (input) input.focus();
+    if (input) input.focus({ preventScroll: true });
 }
 
 function isCellRevealed(r, c) {
@@ -335,8 +379,17 @@ function isCellRevealed(r, c) {
     return cell && cell.classList.contains('revealed');
 }
 
+// Track if keydown already handled the input to avoid double-processing on mobile
+let keydownHandledInput = false;
+
 function onCellInput(e, r, c) {
     if (gameOver) return;
+    // Skip if keydown already handled this letter
+    if (keydownHandledInput) {
+        keydownHandledInput = false;
+        e.target.value = userGrid[r][c] || '';
+        return;
+    }
     if (isCellRevealed(r, c)) {
         e.target.value = userGrid[r][c] || '';
         return;
@@ -414,11 +467,13 @@ function onCellKeydown(e, r, c) {
     if (/^[a-zA-Z]$/.test(e.key)) {
         if (isCellRevealed(r, c)) {
             e.preventDefault();
+            keydownHandledInput = true;
             advanceToNextCell();
             return;
         }
         startTimer();
         e.preventDefault();
+        keydownHandledInput = true;
         const val = e.key.toUpperCase();
         userGrid[r][c] = val;
         const input = gridEl.querySelector(`input[data-row="${r}"][data-col="${c}"]`);
@@ -514,7 +569,7 @@ function selectCell(r, c) {
     selectedCol = c;
     updateHighlights();
     const input = gridEl.querySelector(`input[data-row="${r}"][data-col="${c}"]`);
-    if (input) input.focus();
+    if (input) input.focus({ preventScroll: true });
 }
 
 function onClueClick(dir, num) {

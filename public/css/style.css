@@ -1495,6 +1495,8 @@ body {
     /* Mini Crossword mobile */
     .crossword-container {
         padding: 0.5rem;
+        /* Prevent layout shift when virtual keyboard opens */
+        overflow-anchor: none;
     }
 
     .crossword-timer {
@@ -1510,10 +1512,21 @@ body {
 
     .crossword-grid {
         max-width: 100%;
+        /* Keep grid stable when keyboard opens */
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    .crossword-cell {
+        /* Fixed pixel sizes prevent recalculation jitter */
+        min-height: 0;
     }
 
     .crossword-cell .cell-input {
         font-size: clamp(1rem, 5vw, 1.5rem);
+        /* Prevent iOS zoom on focus */
+        font-size: max(16px, clamp(1rem, 5vw, 1.5rem));
     }
 
     .crossword-clues {
