@@ -219,7 +219,19 @@ async function init() {
         document.getElementById('username').textContent = user.username;
         // Fetch server date first to ensure timezone consistency
         await fetchServerDate();
-        currentDate = getTodayDate();
+
+        // Check if a specific date was requested via URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestedDate = urlParams.get('date');
+
+        if (requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) {
+            // Validate the date isn't in the future
+            const today = getTodayDate();
+            currentDate = requestedDate <= today ? requestedDate : today;
+        } else {
+            currentDate = getTodayDate();
+        }
+
         updateNavigation();
         loadArenaResults(currentDate);
     }

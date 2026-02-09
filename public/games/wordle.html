@@ -16,6 +16,12 @@
     </nav>
 
     <div class="wordle-container">
+        <div class="date-nav" id="date-nav">
+            <button class="date-nav-btn" id="prev-day-btn" aria-label="Previous day">&larr;</button>
+            <span class="date-display" id="date-display">Today</span>
+            <button class="date-nav-btn" id="next-day-btn" aria-label="Next day">&rarr;</button>
+        </div>
+
         <div class="wordle-message" id="message"></div>
 
         <div class="wordle-board" id="board">
@@ -60,7 +66,7 @@
         </div>
 
         <div id="arena-link" class="arena-link" style="display: none;">
-            <a href="/games/wordle-arena.html">Family Wordle Arena &rarr;</a>
+            <a href="/games/wordle-arena.html" id="arena-link-href">Family Wordle Arena &rarr;</a>
             <p>See how your family did!</p>
         </div>
     </div>
@@ -94,7 +100,7 @@
         <div class="modal-content">
             <h2 id="modal-title">Game Over</h2>
             <p id="modal-message"></p>
-            <a href="/games/wordle-arena.html" class="btn btn-primary" style="display: inline-block; text-decoration: none;">See Family Results</a>
+            <a href="/games/wordle-arena.html" id="modal-arena-link" class="btn btn-primary" style="display: inline-block; text-decoration: none;">See Family Results</a>
             <button class="btn btn-secondary" id="close-modal-btn" style="margin-top: 0.5rem;">Close</button>
         </div>
     </div>

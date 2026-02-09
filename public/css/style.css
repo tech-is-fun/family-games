@@ -330,6 +330,46 @@ body {
     touch-action: manipulation;
 }
 
+.date-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.date-nav-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s;
+}
+
+.date-nav-btn:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.date-nav-btn:disabled {
+    background: var(--gray-300);
+    cursor: not-allowed;
+}
+
+.date-display {
+    font-weight: 600;
+    font-size: 1rem;
+    min-width: 100px;
+    text-align: center;
+    color: var(--gray-700);
+}
+
 .wordle-message {
     text-align: center;
     padding: 0.5rem;

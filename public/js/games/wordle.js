@@ -56,6 +56,8 @@ let guesses = [];
 let todayCompleted = false;
 let todayDate = '';
 let waitingForStarter = false; // Block input while applying starter word
+let selectedDate = ''; // Currently selected date (may be different from today)
+let isToday = true; // Whether we're playing today's puzzle
 
 // LocalStorage key for in-progress game
 function getProgressKey(date) {
@@ -151,22 +153,87 @@ function getDailyWordFallback(dateStr) {
 }
 
 // Fetch daily word from server (ensures consistent word across all users)
-async function fetchDailyWord() {
+async function fetchDailyWord(dateStr = null) {
     try {
-        const res = await fetch('/api/games/wordle/word', { cache: 'no-store' });
+        const url = dateStr
+            ? `/api/games/wordle/word?date=${dateStr}`
+            : '/api/games/wordle/word';
+        const res = await fetch(url, { cache: 'no-store' });
         if (res.ok) {
             const data = await res.json();
             if (data.ready === false) {
                 // NYT word not available yet
                 return { date: data.date, ready: false, message: data.message };
             }
-            return { date: data.date, word: data.word, ready: true };
+            return {
+                date: data.date,
+                word: data.word,
+                ready: true,
+                isToday: data.isToday !== false
+            };
         }
     } catch (err) {
         console.error('Failed to fetch daily word from server:', err);
     }
     // Server error - game not available
     return { date: null, ready: false, message: 'Unable to connect to server. Please try again later.' };
+}
+
+// Date navigation helpers
+function formatDateDisplay(dateStr) {
+    const today = getTodayDate();
+    if (dateStr === today) return 'Today';
+
+    const date = new Date(dateStr + 'T00:00:00');
+    const todayDate = new Date(today + 'T00:00:00');
+    const diffDays = Math.floor((todayDate - date) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays === 2) return '2 days ago';
+
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function getPreviousDate(dateStr) {
+    const date = new Date(dateStr + 'T00:00:00');
+    date.setDate(date.getDate() - 1);
+    return date.toISOString().split('T')[0];
+}
+
+function getNextDate(dateStr) {
+    const date = new Date(dateStr + 'T00:00:00');
+    date.setDate(date.getDate() + 1);
+    return date.toISOString().split('T')[0];
+}
+
+function updateDateNav() {
+    const dateDisplay = document.getElementById('date-display');
+    const prevBtn = document.getElementById('prev-day-btn');
+    const nextBtn = document.getElementById('next-day-btn');
+    const today = getTodayDate();
+
+    if (dateDisplay) {
+        dateDisplay.textContent = formatDateDisplay(selectedDate);
+    }
+
+    // Can't go more than 7 days back
+    if (prevBtn) {
+        const dateObj = new Date(selectedDate + 'T00:00:00');
+        const todayObj = new Date(today + 'T00:00:00');
+        const daysDiff = Math.floor((todayObj - dateObj) / (1000 * 60 * 60 * 24));
+        prevBtn.disabled = daysDiff >= 7;
+    }
+
+    // Can't go past today
+    if (nextBtn) {
+        nextBtn.disabled = selectedDate >= today;
+    }
+}
+
+async function navigateToDate(dateStr) {
+    selectedDate = dateStr;
+    updateDateNav();
+    await startGame(selectedDate);
 }
 
 // DOM elements
@@ -275,6 +342,14 @@ function updateArenaLink() {
     if (arenaLink) {
         arenaLink.style.display = todayCompleted ? 'block' : 'none';
     }
+
+    // Update arena links to include selected date
+    const arenaUrl = `/games/wordle-arena.html?date=${selectedDate || todayDate}`;
+    const arenaLinkHref = document.getElementById('arena-link-href');
+    const modalArenaLink = document.getElementById('modal-arena-link');
+
+    if (arenaLinkHref) arenaLinkHref.href = arenaUrl;
+    if (modalArenaLink) modalArenaLink.href = arenaUrl;
 }
 
 // Check if user already completed today's puzzle
@@ -328,9 +403,10 @@ function restoreBoard(savedGuesses, won) {
     }
 
     if (won) {
-        showMessage("You already completed today's Wordle!", 'valid');
+        const dateLabel = isToday ? "today's" : formatDateDisplay(selectedDate) + "'s";
+        showMessage(`You already completed ${dateLabel} Wordle!`, 'valid');
     } else {
-        showMessage(`Today's word was: ${targetWord}`, 'error');
+        showMessage(`The word was: ${targetWord}`, 'error');
     }
 }
 
@@ -523,20 +599,22 @@ function applyStarterWord(word) {
     }
 }
 
-// Start new game (daily)
-async function startGame() {
+// Start new game (daily or for specific date)
+async function startGame(dateStr = null) {
     // Fetch word from server (ensures consistent daily word)
-    const dailyData = await fetchDailyWord();
+    const dailyData = await fetchDailyWord(dateStr);
 
     // Check if game is ready (NYT word available)
     if (!dailyData.ready) {
         gameOver = true; // Block the game
         initBoard();
-        showGameNotReady(dailyData.message || "Today's Wordle is not ready yet. Please check back later.");
+        showGameNotReady(dailyData.message || "This Wordle is not ready yet. Please check back later.");
         return;
     }
 
     todayDate = dailyData.date;
+    selectedDate = dailyData.date;
+    isToday = dailyData.isToday !== false;
     targetWord = dailyData.word;
 
     currentRow = 0;
@@ -550,7 +628,10 @@ async function startGame() {
         key.classList.remove('correct', 'present', 'absent');
     });
 
-    // Check if already completed today
+    // Update date navigation display
+    updateDateNav();
+
+    // Check if already completed this date's puzzle
     const alreadyDone = await checkTodayStatus();
     if (!alreadyDone) {
         // Check for saved in-progress game in localStorage
@@ -561,24 +642,26 @@ async function startGame() {
             showMessage('Game restored from where you left off', 'valid');
             setTimeout(() => showMessage(''), 2000);
         } else {
-            // Fresh game - initialize board and check for starter word
+            // Fresh game - initialize board
             initBoard();
             showMessage('');
 
-            // Check for starter word
-            const starterData = await checkStarterWord();
-            if (starterData) {
-                if (starterData.hasStarter) {
-                    // Apply existing starter word - show who chose it
-                    waitingForStarter = true;
-                    showMessage(`${starterData.chosenBy} chose today's starter: ${starterData.word}`, 'valid');
-                    setTimeout(() => {
-                        applyStarterWord(starterData.word);
-                        waitingForStarter = false;
-                    }, 2000);
-                } else {
-                    // Show modal to pick starter word
-                    showStarterModal(starterData.suggestions);
+            // Only check for starter word on today's puzzle
+            if (isToday) {
+                const starterData = await checkStarterWord();
+                if (starterData) {
+                    if (starterData.hasStarter) {
+                        // Apply existing starter word - show who chose it
+                        waitingForStarter = true;
+                        showMessage(`${starterData.chosenBy} chose today's starter: ${starterData.word}`, 'valid');
+                        setTimeout(() => {
+                            applyStarterWord(starterData.word);
+                            waitingForStarter = false;
+                        }, 2000);
+                    } else {
+                        // Show modal to pick starter word
+                        showStarterModal(starterData.suggestions);
+                    }
                 }
             }
         }
@@ -757,8 +840,33 @@ async function init() {
     if (user) {
         document.getElementById('username').textContent = user.username;
         loadStats();
-        startGame();
+
+        // Check if a specific date was requested via URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestedDate = urlParams.get('date');
+
+        if (requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) {
+            selectedDate = requestedDate;
+        } else {
+            selectedDate = getTodayDate();
+        }
+
+        startGame(selectedDate);
     }
 }
+
+// Date navigation event listeners
+document.getElementById('prev-day-btn').addEventListener('click', async () => {
+    const prevDate = getPreviousDate(selectedDate);
+    await navigateToDate(prevDate);
+});
+
+document.getElementById('next-day-btn').addEventListener('click', async () => {
+    const today = getTodayDate();
+    if (selectedDate < today) {
+        const nextDate = getNextDate(selectedDate);
+        await navigateToDate(nextDate);
+    }
+});
 
 init();

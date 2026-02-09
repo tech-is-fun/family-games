@@ -127,11 +127,35 @@ router.get('/leaderboard/:game', async (req, res) => {
     }
 });
 
-// Get today's wordle word (server-side determination)
+// Get wordle word for a specific date (or today if not specified)
 // Only returns the NYT word - game is not available until word is fetched
 router.get('/wordle/word', requireAuth, async (req, res) => {
     try {
-        const date = getVancouverDateString();
+        const today = getVancouverDateString();
+        // Allow fetching previous days' words (up to 7 days back)
+        let date = req.query.date || today;
+
+        // Validate date format
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            date = today;
+        }
+
+        // Don't allow future dates
+        if (date > today) {
+            date = today;
+        }
+
+        // Check if date is too old (more than 7 days ago)
+        const dateObj = new Date(date + 'T00:00:00');
+        const todayObj = new Date(today + 'T00:00:00');
+        const daysDiff = Math.floor((todayObj - dateObj) / (1000 * 60 * 60 * 24));
+        if (daysDiff > 7) {
+            return res.json({
+                date,
+                ready: false,
+                message: "Puzzles older than 7 days are no longer available."
+            });
+        }
 
         // Try to get the NYT word
         const nytWord = await getNytWordleWord(date);
@@ -140,7 +164,8 @@ router.get('/wordle/word', requireAuth, async (req, res) => {
                 date,
                 word: nytWord.word.toUpperCase(),
                 source: nytWord.source || 'nyt',
-                ready: true
+                ready: true,
+                isToday: date === today
             });
         }
 
@@ -148,7 +173,9 @@ router.get('/wordle/word', requireAuth, async (req, res) => {
         res.json({
             date,
             ready: false,
-            message: "Today's Wordle is not ready yet. The NYT word is fetched daily at 5am PST. Please check back later."
+            message: date === today
+                ? "Today's Wordle is not ready yet. The NYT word is fetched daily at 5am PST. Please check back later."
+                : "This puzzle is not available."
         });
     } catch (err) {
         console.error('Get wordle word error:', err);
@@ -156,7 +183,7 @@ router.get('/wordle/word', requireAuth, async (req, res) => {
         res.json({
             date,
             ready: false,
-            message: "Unable to load today's Wordle. Please try again later."
+            message: "Unable to load Wordle. Please try again later."
         });
     }
 });
