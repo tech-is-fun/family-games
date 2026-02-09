@@ -188,10 +188,18 @@ router.get('/wordle/word', requireAuth, async (req, res) => {
     }
 });
 
-// Get starter word for today
+// Get starter word for a specific date (or today if not specified)
 router.get('/wordle/starter', requireAuth, async (req, res) => {
     try {
-        const date = getVancouverDateString();
+        const today = getVancouverDateString();
+        let date = req.query.date || today;
+
+        // Validate date format
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            date = today;
+        }
+
+        const isToday = date === today;
         const starter = await getStarterWord(date);
 
         if (starter) {
@@ -201,10 +209,18 @@ router.get('/wordle/starter', requireAuth, async (req, res) => {
                 hasStarter: true,
                 word: starter.word.toUpperCase(),
                 chosenBy: displayName,
-                date
+                date,
+                isToday
+            });
+        } else if (!isToday) {
+            // Past date with no starter word - just return no starter
+            res.json({
+                hasStarter: false,
+                date,
+                isToday: false
             });
         } else {
-            // No starter word yet - provide suggestions
+            // Today with no starter word yet - provide suggestions
             const recentWords = await getRecentStarterWords(7);
             const recentSet = new Set(recentWords.map(w => w.toLowerCase()));
 
@@ -221,7 +237,8 @@ router.get('/wordle/starter', requireAuth, async (req, res) => {
             res.json({
                 hasStarter: false,
                 suggestions,
-                date
+                date,
+                isToday: true
             });
         }
     } catch (err) {

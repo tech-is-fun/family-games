@@ -437,9 +437,12 @@ const starterError = document.getElementById('starter-error');
 let isSelectingStarter = false;
 
 // Check and handle starter word
-async function checkStarterWord() {
+async function checkStarterWord(dateStr = null) {
     try {
-        const res = await fetch('/api/games/wordle/starter', { cache: 'no-store' });
+        const url = dateStr
+            ? `/api/games/wordle/starter?date=${dateStr}`
+            : '/api/games/wordle/starter';
+        const res = await fetch(url, { cache: 'no-store' });
         if (!res.ok) return null;
         return await res.json();
     } catch (err) {
@@ -646,23 +649,23 @@ async function startGame(dateStr = null) {
             initBoard();
             showMessage('');
 
-            // Only check for starter word on today's puzzle
-            if (isToday) {
-                const starterData = await checkStarterWord();
-                if (starterData) {
-                    if (starterData.hasStarter) {
-                        // Apply existing starter word - show who chose it
-                        waitingForStarter = true;
-                        showMessage(`${starterData.chosenBy} chose today's starter: ${starterData.word}`, 'valid');
-                        setTimeout(() => {
-                            applyStarterWord(starterData.word);
-                            waitingForStarter = false;
-                        }, 2000);
-                    } else {
-                        // Show modal to pick starter word
-                        showStarterModal(starterData.suggestions);
-                    }
+            // Check for starter word (works for all dates)
+            const starterData = await checkStarterWord(selectedDate);
+            if (starterData) {
+                if (starterData.hasStarter) {
+                    // Apply existing starter word - show who chose it
+                    waitingForStarter = true;
+                    const dateLabel = isToday ? "today's" : "the";
+                    showMessage(`${starterData.chosenBy} chose ${dateLabel} starter: ${starterData.word}`, 'valid');
+                    setTimeout(() => {
+                        applyStarterWord(starterData.word);
+                        waitingForStarter = false;
+                    }, 2000);
+                } else if (isToday) {
+                    // Only allow picking starter word for today's puzzle
+                    showStarterModal(starterData.suggestions);
                 }
+                // For past dates with no starter, just start the game normally
             }
         }
     }
