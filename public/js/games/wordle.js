@@ -32,7 +32,7 @@ const WORDS = [
     'split', 'spoke', 'sport', 'staff', 'stage', 'stake', 'stand', 'start', 'state', 'steam',
     'steel', 'steep', 'stick', 'still', 'stock', 'stone', 'stood', 'store', 'storm', 'story',
     'strip', 'stuck', 'study', 'stuff', 'style', 'sugar', 'suite', 'super', 'sweet', 'table',
-    'taken', 'taste', 'taxes', 'teach', 'teeth', 'texas', 'thank', 'theft', 'their',
+    'taken', 'taste', 'taxes', 'teach', 'teeth', 'thank', 'theft', 'their',
     'theme', 'there', 'these', 'thick', 'thing', 'think', 'third', 'those', 'three', 'threw',
     'throw', 'tight', 'times', 'tired', 'title', 'today', 'token', 'tools', 'total', 'touch',
     'tough', 'tower', 'track', 'trade', 'train', 'trash', 'treat', 'trend', 'trial', 'tribe',
