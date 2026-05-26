@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Wordle">
+<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png" type="image/png">
+<title>Wordle</title>
+<script src="words.js"></script>
+<style>
+  /* ── Reset & Base ────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green:  #6aaa64;
+    --yellow: #c9b458;
+    --gray:   #787c7e;
+    --lt-gray:#d3d6da;
+    --white:  #ffffff;
+    --black:  #1a1a1b;
+    --header: 50px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bot: env(safe-area-inset-bottom, 0px);
+    font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+  }
+  html, body {
+    height: 100%;
+    /* Use small viewport height so layout fits even when Safari URL bar is visible */
+    height: 100svh;
+    width: 100%;
+    background: var(--white); color: var(--black);
+    overflow: hidden;
+  }
+  button { cursor: pointer; border: none; background: none; font-family: inherit; touch-action: manipulation; }
+  input  { touch-action: manipulation; }
+
+  /* ── Layout ──────────────────────────────────────────────────────── */
+  #app {
+    display: flex; flex-direction: column;
+    height: 100vh; /* fallback */
+    height: 100svh; /* modern: always small/constrained viewport */
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bot);
+  }
+
+  /* ── Header ──────────────────────────────────────────────────────── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    height: var(--header);
+    border-bottom: 1px solid var(--lt-gray);
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+  .hdr-left, .hdr-right { display: flex; gap: 4px; align-items: center; width: 80px; }
+  .hdr-right { justify-content: flex-end; }
+  header h1 {
+    font-size: 1.6rem; font-weight: 700; letter-spacing: .05rem;
+    flex: 1; text-align: center;
+  }
+  .icon-btn {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px;
+    font-size: 1.1rem;
+  }
+  .icon-btn:hover { background: #f0f0f0; }
+  #streak-badge {
+    font-size: .7rem; font-weight: 700;
+    background: var(--green); color: #fff;
+    padding: 2px 6px; border-radius: 10px;
+    display: none;
+  }
+
+  /* ── Toast ───────────────────────────────────────────────────────── */
+  #toast-container {
+    position: fixed; top: 72px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; z-index: 1000; pointer-events: none;
+  }
+  .toast {
+    background: var(--black); color: var(--white);
+    padding: 10px 18px; border-radius: 6px;
+    font-weight: 700; font-size: .9rem;
+    opacity: 1; transition: opacity .4s;
+  }
+  .toast.hide { opacity: 0; }
+
+  /* ── Screens ─────────────────────────────────────────────────────── */
+  .screen { display: none; flex-direction: column; flex: 1; overflow-y: auto; }
+  .screen.active { display: flex; }
+
+  /* ── Auth Screen ─────────────────────────────────────────────────── */
+  #screen-auth {
+    align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .auth-box {
+    width: 100%; max-width: 360px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .auth-box h2 { font-size: 1.3rem; font-weight: 700; text-align: center; }
+  .auth-box p { font-size: .85rem; color: #666; text-align: center; }
+  .auth-box input {
+    width: 100%; padding: 12px 14px;
+    border: 1px solid #ddd; border-radius: 6px;
+    font-size: 1rem; font-family: inherit;
+    outline: none;
+  }
+  .auth-box input:focus { border-color: var(--black); }
+  .auth-primary {
+    width: 100%; padding: 13px;
+    background: var(--black); color: var(--white);
+    border-radius: 6px; font-size: 1rem; font-weight: 700;
+  }
+  .auth-link {
+    font-size: .85rem; color: #555; text-align: center;
+    text-decoration: underline; cursor: pointer;
+    background: none; border: none; font-family: inherit;
+  }
+  .auth-err {
+    font-size: .8rem; color: #c0392b; text-align: center;
+    min-height: 18px;
+  }
+  .auth-ok {
+    font-size: .8rem; color: #538d4e; text-align: center;
+    min-height: 18px;
+  }
+  #auth-name { display: none; }
+
+  /* ── Game Screen ─────────────────────────────────────────────────── */
+  #screen-game {
+    align-items: center;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  /* Day nav bar */
+  #day-nav {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    height: 52px;
+    flex-shrink: 0;
+    width: 100%;
+  }
+  #day-nav button {
+    font-size: 1.5rem; font-weight: 700;
+    width: 56px; height: 42px;
+    border-radius: 21px;
+    background: #e8e8e8; color: #333;
+    display: flex; align-items: center; justify-content: center;
+    border: none; cursor: pointer;
+  }
+  #day-nav button:hover:not(:disabled) { background: #d0d0d0; }
+  #day-nav button:disabled { opacity: .3; cursor: default; }
+  #day-label { font-size: .82rem; font-weight: 600; min-width: 90px; text-align: center; color: #333; }
+
+  /* Board – JS sizes it via sizeBoard() */
+  #board-container {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+    padding: 4px 0 6px;
+  }
+  #board {
+    display: grid;
+    grid-template-rows: repeat(6, 1fr);
+    gap: 5px;
+    /* width/height set by JS sizeBoard() */
+  }
+  .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+  .tile {
+    border: 2px solid var(--lt-gray);
+    display: flex; align-items: center; justify-content: center;
+    font-size: clamp(1rem, 6vw, 1.8rem);
+    font-weight: 700; text-transform: uppercase;
+    user-select: none;
+    position: relative;
+    transition: border-color .1s;
+  }
+  .tile[data-letter]:not([data-letter=""]) { border-color: #888; }
+  /* Real-time "not in word list" indicator — subtle orange border */
+  .tile.invalid-word { border-color: #e07b39 !important; animation: invalidPulse .35s ease; }
+  @keyframes invalidPulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+  .tile.pop { animation: pop .1s ease; }
+  @keyframes pop { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+  .tile.shake { animation: shake .5s ease; }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    10%,30%,50%,70%,90%{transform:translateX(-4px)}
+    20%,40%,60%,80%{transform:translateX(4px)}
+  }
+  /* Flip animation — perspective gives natural 3-D depth */
+  .tile { perspective: 250px; }
+  .tile.flip-in  { animation: flipIn  .18s cubic-bezier(0.4,0,1,1) forwards; }
+  .tile.flip-out { animation: flipOut .18s cubic-bezier(0,0,0.6,1) forwards; }
+  @keyframes flipIn  { from{transform:rotateX(0deg)}    to{transform:rotateX(-90deg)} }
+  @keyframes flipOut { from{transform:rotateX(-90deg)}  to{transform:rotateX(0deg)} }
+
+  /* Tile colors (applied after flip) */
+  .tile.correct { background: var(--green);  border-color: var(--green);  color: #fff; }
+  .tile.present { background: var(--yellow); border-color: var(--yellow); color: #fff; }
+  .tile.absent  { background: var(--gray);   border-color: var(--gray);   color: #fff; }
+
+  /* Bounce (winner) */
+  .tile.bounce { animation: bounce .4s ease forwards; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-20px)} 60%{transform:translateY(-10px)} }
+
+  /* Keyboard */
+  #keyboard {
+    width: 100%;
+    padding: 0 4px 10px;
+    flex-shrink: 0;
+  }
+  .kb-row {
+    display: flex; justify-content: center;
+    gap: 4px; margin-bottom: 4px;
+  }
+  .key {
+    height: 50px;
+    flex: 1;
+    min-width: 0;
+    border-radius: 4px;
+    font-size: clamp(.58rem, 3vw, .8rem); font-weight: 700;
+    text-transform: uppercase;
+    background: var(--lt-gray); color: var(--black);
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s, color .2s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .key.wide { flex: 1.5; font-size: clamp(.52rem, 2.5vw, .72rem); }
+  .key svg { pointer-events: none; display: block; }
+  .key.correct { background: var(--green);  color: #fff; }
+  .key.present { background: var(--yellow); color: #fff; }
+  .key.absent  { background: var(--gray);   color: #fff; }
+  .key:active { filter: brightness(.9); }
+
+  /* ── Arena Screen ────────────────────────────────────────────────── */
+  #screen-arena {
+    padding: 0 16px 16px;
+  }
+  .arena-header {
+    padding: 14px 0 10px;
+    font-size: 1rem; font-weight: 700;
+    border-bottom: 1px solid var(--lt-gray);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .arena-date { font-size: .8rem; color: #666; font-weight: 400; }
+  #arena-list { display: flex; flex-direction: column; gap: 20px; padding-top: 16px; }
+  .arena-guesses { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+  .arena-guess-row {
+    display: flex; align-items: center; gap: 10px;
+    height: 20px; /* lock row height to tile height so every row lines up */
+  }
+  .arena-guess-word {
+    font-size: .72rem; font-weight: 700; letter-spacing: .04rem;
+    color: #444;
+    width: 52px;       /* wide enough for any 5-letter word without clipping */
+    flex-shrink: 0;
+    text-transform: uppercase;
+    line-height: 20px; /* vertically centre text within the tile height */
+  }
+  .mini-row { display: flex; gap: 3px; align-items: center; }
+  #arena-locked {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; padding: 40px 16px; text-align: center; color: #666;
+  }
+  #arena-locked .lock-icon { font-size: 2.5rem; }
+  #arena-locked p { font-size: .9rem; line-height: 1.5; }
+  .arena-player { display: flex; flex-direction: column; gap: 8px; }
+  .arena-player-name {
+    font-size: .85rem; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .arena-result-badge {
+    font-size: .7rem; padding: 2px 8px; border-radius: 10px;
+    font-weight: 600;
+  }
+  .badge-win  { background: #e8f5e9; color: var(--green); }
+  .badge-loss { background: #fce4ec; color: #e53935; }
+  .mini-board { display: flex; flex-direction: column; gap: 3px; }
+  .mini-tile  {
+    width: 20px; height: 20px;
+    border-radius: 2px;
+    background: var(--lt-gray);
+  }
+  .mini-tile.correct { background: var(--green); }
+  .mini-tile.present { background: var(--yellow); }
+  .mini-tile.absent  { background: var(--gray); }
+
+  /* ── Stats Modal ─────────────────────────────────────────────────── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 500;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--white); border-radius: 12px;
+    padding: 24px 20px; width: min(380px, 90vw);
+    position: relative;
+  }
+  .modal h2 {
+    text-align: center; font-size: 1rem; font-weight: 700;
+    letter-spacing: .15rem; text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .modal-close {
+    position: absolute; top: 14px; right: 14px;
+    font-size: 1.4rem; color: #666; line-height: 1;
+  }
+  .stats-row {
+    display: flex; justify-content: center; gap: 16px;
+    margin-bottom: 20px;
+  }
+  .stat-box { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .stat-num { font-size: 1.6rem; font-weight: 700; }
+  .stat-lbl { font-size: .65rem; text-align: center; color: #666; max-width: 44px; line-height: 1.2; }
+  .dist-title { font-size: .75rem; font-weight: 700; letter-spacing: .1rem; text-transform: uppercase; margin-bottom: 10px; }
+  .dist-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: .85rem; }
+  .dist-bar-wrap { flex: 1; }
+  .dist-bar {
+    background: var(--gray); color: #fff;
+    font-size: .75rem; font-weight: 700;
+    padding: 2px 6px; border-radius: 2px;
+    text-align: right; min-width: 20px;
+    transition: width .4s;
+  }
+  .dist-bar.highlight { background: var(--green); }
+  .modal-share {
+    margin-top: 20px; padding: 12px;
+    width: 100%; background: var(--green); color: #fff;
+    border-radius: 6px; font-size: 1rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+
+  /* ── Starter Word Modal ──────────────────────────────────────────── */
+  #modal-starter .modal { max-width: 340px; }
+  #modal-starter p { font-size: .88rem; color: #444; margin-bottom: 0; line-height: 1.5; }
+  .starter-chip {
+    padding: 10px 16px; border-radius: 8px;
+    background: var(--lt-gray); color: var(--black);
+    font-size: 1rem; font-weight: 700; letter-spacing: .12rem;
+    text-transform: uppercase; cursor: pointer; border: 2px solid transparent;
+    transition: background .15s, border-color .15s;
+  }
+  .starter-chip:hover, .starter-chip.selected {
+    background: #e8f5e9; border-color: var(--green); color: var(--green);
+  }
+  #starter-input {
+    width: 100%; padding: 12px;
+    border: 2px solid var(--lt-gray); border-radius: 6px;
+    font-size: 1.3rem; font-weight: 700; text-align: center; text-transform: uppercase;
+    letter-spacing: .3rem; outline: none; margin-bottom: 8px;
+  }
+  #starter-input:focus { border-color: var(--black); }
+  #starter-err { font-size: .8rem; color: #c0392b; min-height: 18px; margin-bottom: 8px; text-align: center; }
+  #starter-submit {
+    width: 100%; padding: 12px;
+    background: var(--black); color: #fff;
+    border-radius: 6px; font-size: 1rem; font-weight: 700;
+  }
+  #starter-skip {
+    width: 100%; padding: 10px;
+    font-size: .85rem; color: #666; text-decoration: underline;
+    margin-top: 6px;
+  }
+
+  /* ── Nav Tabs ────────────────────────────────────────────────────── */
+  #tab-bar {
+    display: flex;
+    border-top: 1px solid var(--lt-gray);
+    flex-shrink: 0;
+  }
+  .tab-btn {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 8px 0;
+    font-size: .65rem; font-weight: 600;
+    color: #888; gap: 3px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tab-btn .tab-icon { font-size: 1.2rem; }
+  .tab-btn.active { color: var(--black); }
+
+  /* ── Loading ─────────────────────────────────────────────────────── */
+  #loading-overlay {
+    position: fixed; inset: 0;
+    background: var(--white);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999; flex-direction: column; gap: 16px;
+  }
+  #loading-overlay .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--lt-gray);
+    border-top-color: var(--black);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading-overlay p { font-size: .9rem; color: #666; }
+
+  /* ── Completed Banner ────────────────────────────────────────────── */
+  #completed-banner {
+    background: var(--white); border-bottom: 1px solid var(--lt-gray);
+    padding: 10px 16px;
+    display: none;
+    align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  #completed-banner.show { display: flex; }
+  #completed-banner p { font-size: .85rem; }
+  #completed-banner strong { font-weight: 700; }
+  #btn-see-results {
+    background: var(--black); color: #fff;
+    padding: 7px 14px; border-radius: 20px;
+    font-size: .8rem; font-weight: 700;
+  }
+</style>
+</head>
+<body>
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <p>Loading…</p>
+</div>
+
+<div id="app" style="display:none">
+  <!-- Header -->
+  <header>
+    <div class="hdr-left">
+      <button class="icon-btn" id="btn-menu" title="Menu">☰</button>
+    </div>
+    <h1>Wordle</h1>
+    <div class="hdr-right">
+      <span id="streak-badge">🔥0</span>
+      <button class="icon-btn" id="btn-stats" title="Stats">📊</button>
+      <button class="icon-btn" id="btn-logout" title="Sign out" style="font-size:.8rem;font-weight:700">↩</button>
+    </div>
+  </header>
+
+  <!-- Toast -->
+  <div id="toast-container"></div>
+
+  <!-- ── Auth Screen ── -->
+  <div class="screen active" id="screen-auth">
+    <div class="auth-box">
+      <h2 id="auth-title">Sign in to Wordle</h2>
+      <p id="auth-sub">Play with family &amp; see everyone's results</p>
+      <input type="text" id="auth-name" placeholder="Your name (display)" style="display:none">
+      <input type="email" id="auth-email" placeholder="Email" autocomplete="email">
+      <input type="password" id="auth-pass" placeholder="Password" autocomplete="current-password">
+      <div class="auth-err" id="auth-err"></div>
+      <div class="auth-ok" id="auth-ok"></div>
+      <button class="auth-primary" id="auth-submit">Sign In</button>
+      <button class="auth-link" id="auth-toggle">Don't have an account? Sign up</button>
+      <button class="auth-link" id="auth-forgot" style="margin-top:4px;font-size:.8rem;color:#888">Forgot password?</button>
+    </div>
+  </div>
+
+  <!-- ── Game Screen ── -->
+  <div class="screen" id="screen-game">
+    <!-- Completed banner -->
+    <div id="completed-banner">
+      <p id="completed-text"></p>
+      <button id="btn-see-results">See Results →</button>
+    </div>
+
+    <!-- Day nav -->
+    <div id="day-nav">
+      <button id="btn-prev-day" title="Previous day">←</button>
+      <span id="day-label">Today</span>
+      <button id="btn-next-day" title="Next day">→</button>
+    </div>
+
+    <!-- Board -->
+    <div id="board-container">
+      <div id="board"></div>
+    </div>
+
+    <!-- Keyboard -->
+    <div id="keyboard">
+      <div class="kb-row" id="kb-row1"></div>
+      <div class="kb-row" id="kb-row2"></div>
+      <div class="kb-row" id="kb-row3"></div>
+    </div>
+  </div>
+
+  <!-- ── Arena Screen ── -->
+  <div class="screen" id="screen-arena">
+    <div class="arena-header">
+      <span>Family Arena</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button id="arena-btn-prev" style="font-size:1.1rem;padding:2px 8px;color:#555;border-radius:4px" title="Previous day">‹</button>
+        <span class="arena-date" id="arena-date-lbl"></span>
+        <button id="arena-btn-next" style="font-size:1.1rem;padding:2px 8px;color:#555;border-radius:4px" title="Next day">›</button>
+      </div>
+    </div>
+    <div id="arena-locked" style="display:none">
+      <div class="lock-icon">🔒</div>
+      <p>Finish today's puzzle to see<br>how everyone else did!</p>
+    </div>
+    <div id="arena-list"></div>
+  </div>
+
+  <!-- Tab bar (shown when logged in) -->
+  <div id="tab-bar" style="display:none">
+    <button class="tab-btn active" id="tab-game" onclick="switchTab('game')">
+      <span class="tab-icon">🟩</span>Game
+    </button>
+    <button class="tab-btn" id="tab-arena" onclick="switchTab('arena')">
+      <span class="tab-icon">👥</span>Arena
+    </button>
+  </div>
+</div>
+
+<!-- ── Stats Modal ── -->
+<div class="modal-overlay" id="modal-stats">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-stats')">✕</button>
+    <h2>Statistics</h2>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-num" id="stat-played">0</div><div class="stat-lbl">Played</div></div>
+      <div class="stat-box"><div class="stat-num" id="stat-winpct">0</div><div class="stat-lbl">Win %</div></div>
+      <div class="stat-box"><div class="stat-num" id="stat-streak">0</div><div class="stat-lbl">Current Streak</div></div>
+      <div class="stat-box"><div class="stat-num" id="stat-maxstreak">0</div><div class="stat-lbl">Max Streak</div></div>
+    </div>
+    <div class="dist-title">Guess Distribution</div>
+    <div id="guess-dist"></div>
+    <button class="modal-share" id="btn-share">Share 📋</button>
+  </div>
+</div>
+
+<!-- ── Starter Word Modal ── -->
+<div class="modal-overlay" id="modal-starter">
+  <div class="modal">
+    <h2>Starter Word</h2>
+    <p id="starter-desc">You're the first to play today! Pick a starting word everyone must use as their first guess.</p>
+    <div id="starter-suggestions" style="display:flex;gap:8px;justify-content:center;margin:14px 0 10px;flex-wrap:wrap"></div>
+    <div style="text-align:center;font-size:.75rem;color:#999;margin-bottom:10px">— or type your own —</div>
+    <input type="text" id="starter-input" maxlength="5" placeholder="WORD" spellcheck="false" autocomplete="off">
+    <div id="starter-err"></div>
+    <button id="starter-submit">Set Starter Word</button>
+    <button id="starter-skip">Skip — no starter word today</button>
+  </div>
+</div>
+
+<script>
+// ── Firebase Config ───────────────────────────────────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDAhI_9iog3Hy_rbatq97aSjCBp8SmUp3g",
+  authDomain: "family-recipes-9d767.firebaseapp.com",
+  projectId: "family-recipes-9d767",
+  storageBucket: "family-recipes-9d767.firebasestorage.app",
+  messagingSenderId: "321469749220",
+  appId: "1:321469749220:web:7dc538d48748dd619899f1"
+};
+
+// ── Firebase SDK (compat) ─────────────────────────────────────────────────────
+const FB_SCRIPTS = [
+  'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js',
+  'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js',
+];
+
+async function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const state = {
+  user: null,
+  db: null,
+  auth: null,
+  // current day offset (0 = today, -1 = yesterday, ...)
+  dayOffset: 0,
+  // keyed by dateStr
+  games: {},
+  // today's word (null = loading)
+  wordOfDay: null,
+  wordDate: null,
+  // arena
+  arenaDate: null,
+  arenaUnsub: null,
+  wordsByDate: {}, // cache: dateStr → word
+  // starter word info for today
+  starterWord: null,
+  starterSetBy: null,
+  // stats (loaded from Firestore per user)
+  stats: { played: 0, wins: 0, streak: 0, maxStreak: 0, dist: {1:0,2:0,3:0,4:0,5:0,6:0} }
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+// Always use Pacific time so the day rolls over at midnight PT, not midnight UTC.
+// At e.g. 8 PM Pacific = 3 AM UTC next day, UTC would give the wrong date.
+function pacificDateStr(offsetDays = 0) {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(now);
+  const y = parts.find(p => p.type === 'year').value;
+  const m = parts.find(p => p.type === 'month').value;
+  const d = parts.find(p => p.type === 'day').value;
+  // Build a noon-local date (avoids DST edge cases) then apply offset
+  const base = new Date(`${y}-${m}-${d}T12:00:00`);
+  base.setDate(base.getDate() + offsetDays);
+  return base.toISOString().split('T')[0];
+}
+function dateStrFromOffset(offset) {
+  return pacificDateStr(offset);
+}
+function friendlyDate(dateStr) {
+  if (dateStr === dateStrFromOffset(0)) return 'Today';
+  if (dateStr === dateStrFromOffset(-1)) return 'Yesterday';
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function toast(msg, duration = 1800) {
+  const el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => { el.classList.add('hide'); setTimeout(() => el.remove(), 500); }, duration);
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+async function boot() {
+  // Safety net: if something goes wrong, show an error rather than spinning forever
+  const failTimer = setTimeout(() => {
+    showLoadError('Connection timed out. Check your internet and reload.');
+  }, 12000);
+
+  try {
+    for (const src of FB_SCRIPTS) await loadScript(src);
+    firebase.initializeApp(FIREBASE_CONFIG);
+    state.auth = firebase.auth();
+    state.db   = firebase.firestore();
+
+    state.auth.onAuthStateChanged(user => {
+      clearTimeout(failTimer);
+      if (user) {
+        state.user = user;
+        onLoggedIn();
+      } else {
+        state.user = null;
+        showAuth();
+      }
+      hideLoading();
+    }, err => {
+      clearTimeout(failTimer);
+      showLoadError('Auth error: ' + err.message);
+    });
+  } catch(e) {
+    clearTimeout(failTimer);
+    showLoadError('Could not connect to Firebase. Check your internet and reload.<br><small style="opacity:.6">' + e.message + '</small>');
+  }
+}
+
+function hideLoading() {
+  document.getElementById('loading-overlay').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+}
+
+function showLoadError(msg) {
+  const el = document.getElementById('loading-overlay');
+  el.innerHTML = `
+    <div style="max-width:300px;text-align:center;padding:24px">
+      <div style="font-size:2rem;margin-bottom:16px">⚠️</div>
+      <p style="font-size:.95rem;color:#333;line-height:1.5;margin-bottom:20px">${msg}</p>
+      <button onclick="location.reload()" style="background:#1a1a1b;color:#fff;padding:11px 28px;border:none;border-radius:6px;font-size:.95rem;font-weight:700;cursor:pointer">Reload</button>
+    </div>`;
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+let authMode = 'signin'; // 'signin' | 'signup'
+
+function showAuth() {
+  document.getElementById('tab-bar').style.display = 'none';
+  showScreen('auth');
+  document.getElementById('btn-stats').style.display = 'none';
+  document.getElementById('btn-logout').style.display = 'none';
+  document.getElementById('streak-badge').style.display = 'none';
+}
+
+document.getElementById('auth-toggle').addEventListener('click', () => {
+  authMode = authMode === 'signin' ? 'signup' : 'signin';
+  document.getElementById('auth-title').textContent = authMode === 'signin' ? 'Sign in to Wordle' : 'Create account';
+  document.getElementById('auth-sub').textContent   = authMode === 'signin' ? 'Play with family & see everyone\u2019s results' : 'Join the family arena';
+  document.getElementById('auth-submit').textContent = authMode === 'signin' ? 'Sign In' : 'Create Account';
+  document.getElementById('auth-toggle').textContent = authMode === 'signin' ? 'Don\'t have an account? Sign up' : 'Already have an account? Sign in';
+  document.getElementById('auth-name').style.display = authMode === 'signup' ? 'block' : 'none';
+  document.getElementById('auth-err').textContent = '';
+});
+
+document.getElementById('auth-submit').addEventListener('click', async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass  = document.getElementById('auth-pass').value;
+  const name  = document.getElementById('auth-name').value.trim();
+  const errEl = document.getElementById('auth-err');
+  errEl.textContent = '';
+
+  if (!email || !pass) { errEl.textContent = 'Please enter email and password.'; return; }
+  if (authMode === 'signup' && !name) { errEl.textContent = 'Please enter your display name.'; return; }
+
+  try {
+    if (authMode === 'signin') {
+      await state.auth.signInWithEmailAndPassword(email, pass);
+    } else {
+      const cred = await state.auth.createUserWithEmailAndPassword(email, pass);
+      await cred.user.updateProfile({ displayName: name });
+      // Save user profile in Firestore
+      await state.db.collection('users').doc(cred.user.uid).set({
+        name, email, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+  } catch(e) {
+    errEl.textContent = friendlyAuthError(e.code);
+  }
+});
+
+// Allow Enter key on password field
+document.getElementById('auth-pass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('auth-submit').click();
+});
+
+// Forgot password
+document.getElementById('auth-forgot').addEventListener('click', async () => {
+  const email  = document.getElementById('auth-email').value.trim();
+  const errEl  = document.getElementById('auth-err');
+  const okEl   = document.getElementById('auth-ok');
+  errEl.textContent = '';
+  okEl.textContent  = '';
+  if (!email) { errEl.textContent = 'Enter your email above first.'; return; }
+  try {
+    await state.auth.sendPasswordResetEmail(email);
+    okEl.textContent = 'Reset email sent! Check your inbox.';
+  } catch(e) {
+    errEl.textContent = friendlyAuthError(e.code);
+  }
+});
+
+function friendlyAuthError(code) {
+  const map = {
+    'auth/user-not-found':      'No account found with that email.',
+    'auth/wrong-password':      'Incorrect password.',
+    'auth/invalid-credential':  'Incorrect email or password.',
+    'auth/email-already-in-use':'That email is already registered.',
+    'auth/invalid-email':       'Please enter a valid email address.',
+    'auth/weak-password':       'Password must be at least 6 characters.',
+    'auth/too-many-requests':   'Too many attempts — wait a minute and try again.',
+    'auth/invalid-login-credentials': 'Incorrect email or password. Use "Forgot password?" to reset.',
+    'auth/unauthorized-domain': 'This domain isn\u2019t authorised in Firebase. Add it under Authentication \u2192 Settings \u2192 Authorized domains.',
+    'auth/network-request-failed': 'Network error \u2014 check your connection and try again.',
+  };
+  return map[code] || ('Something went wrong (' + (code || 'unknown') + '). Please try again.');
+}
+
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  if (confirm('Sign out?')) {
+    await state.auth.signOut();
+  }
+});
+
+// ── Post-login ────────────────────────────────────────────────────────────────
+async function onLoggedIn() {
+  document.getElementById('btn-stats').style.display = '';
+  document.getElementById('btn-logout').style.display = '';
+  document.getElementById('tab-bar').style.display = 'flex';
+
+  await loadStats();
+  switchTab('game');
+  await loadDay(0);
+}
+
+// ── Screen management ─────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  showScreen(tab);
+  if (tab === 'arena') {
+    // Default arena to today when tapped directly
+    if (state.arenaDate === null) {
+      arenaOffset = state.dayOffset;
+      state.arenaDate = dateStrFromOffset(arenaOffset);
+    }
+    updateArenaDayBtns();
+    renderArena();
+  }
+}
+
+// ── Local word fallback (date-seeded, deterministic) ─────────────────────────
+function getLocalWordForDate(dateStr) {
+  const pool = typeof WORDLE_ANSWERS !== 'undefined' ? WORDLE_ANSWERS : [];
+  if (!pool.length) return null;
+  // Days since a fixed epoch → consistent word for each date across all users
+  const epoch = new Date('2024-01-01T00:00:00Z');
+  const d     = new Date(dateStr + 'T00:00:00Z');
+  const day   = Math.round((d - epoch) / 86400000);
+  return pool[((day % pool.length) + pool.length) % pool.length];
+}
+
+// ── Word Loading ──────────────────────────────────────────────────────────────
+async function loadDay(offset) {
+  state.dayOffset = offset;
+  currentInput = [];
+  const dateStr = dateStrFromOffset(offset);
+
+  document.getElementById('day-label').textContent = friendlyDate(dateStr);
+  document.getElementById('btn-prev-day').disabled = (offset <= -7);
+  document.getElementById('btn-next-day').disabled = (offset >= 0);
+
+  // Load today's word from the Netlify function, with local fallback
+  let word = null;
+  try {
+    const resp = await fetch(`/.netlify/functions/get-word?date=${dateStr}`);
+    let data = {};
+    try { data = await resp.json(); } catch(e) { /* non-JSON response */ }
+    if (data.word && /^[a-z]{5}$/.test(data.word.toLowerCase())) {
+      word = data.word.toLowerCase();
+    }
+  } catch(e) { /* fall through to local word */ }
+
+  if (!word) {
+    word = getLocalWordForDate(dateStr);
+  }
+
+  if (!word) {
+    toast('Could not load word — try reloading', 4000);
+    return;
+  }
+
+  state.wordOfDay  = word;
+  state.wordDate   = dateStr;
+  state.wordsByDate[dateStr] = word; // cache for arena use
+
+  // Load starter word for this date
+  await loadStarterWord(dateStr);
+
+  // Load this user's game state for this date
+  await loadGameState(dateStr);
+
+  // Build board
+  buildBoard();
+  buildKeyboard();
+  renderBoard();
+  renderKeyboard();
+  updateCompletedBanner();
+  // Size AFTER layout settles (banner may have just shown/hidden, changing available height)
+  requestAnimationFrame(() => requestAnimationFrame(sizeBoard));
+
+  // Starter word logic (user hasn't guessed yet)
+  const myGame = state.games[dateStr];
+  const alreadyGuessed = myGame && myGame.guesses.length > 0;
+
+  if (!alreadyGuessed) {
+    if (state.starterWord) {
+      // Someone already set a starter word — notify, auto-fill, and auto-submit
+      toast(`Starter word: ${state.starterWord.toUpperCase()} (set by ${state.starterSetBy})`, 3000);
+      currentInput = state.starterWord.split('');
+      renderBoard();
+      if (state.wordOfDay) setTimeout(() => submitGuess(dateStr, myGame), 500);
+    } else if (offset === 0 && state.starterSetBy === null) {
+      // Today only: no one has set anything yet — check if anyone has played
+      const noOnePlayed = !(await hasAnyonePlayed(dateStr));
+      if (noOnePlayed) {
+        populateStarterSuggestions();
+        openModal('modal-starter');
+      }
+    }
+    // if starterSetBy = 'skipped', do nothing
+  }
+}
+
+async function hasAnyonePlayed(dateStr) {
+  try {
+    const snap = await state.db.collection('wordle_results')
+      .where('date', '==', dateStr).limit(1).get();
+    return !snap.empty;
+  } catch(e) { return false; }
+}
+
+async function loadStarterWord(dateStr) {
+  state.starterWord  = null;
+  state.starterSetBy = null;
+  try {
+    const doc = await state.db.collection('wordle_starters').doc(dateStr).get();
+    if (doc.exists) {
+      const d = doc.data();
+      state.starterWord  = d.word  || null;
+      state.starterSetBy = d.setBy || null;
+      // Ensure the starter word is always accepted as a valid guess,
+      // even if it's not in the local word list
+      if (state.starterWord) VALID_WORDS.add(state.starterWord);
+    }
+  } catch(e) {}
+}
+
+async function loadGameState(dateStr) {
+  if (!state.games[dateStr]) {
+    state.games[dateStr] = { guesses: [], status: 'playing' }; // status: playing|won|lost
+  }
+  try {
+    const doc = await state.db.collection('wordle_results')
+      .doc(`${state.user.uid}_${dateStr}`).get();
+    if (doc.exists) {
+      const d = doc.data();
+      state.games[dateStr] = {
+        guesses: d.guesses || [],
+        status:  d.status  || 'playing'
+      };
+    }
+  } catch(e) {}
+}
+
+// ── Board ─────────────────────────────────────────────────────────────────────
+// ── Board Sizing ──────────────────────────────────────────────────────────────
+function sizeBoard() {
+  const container = document.getElementById('board-container');
+  const board     = document.getElementById('board');
+  if (!container || !board) return;
+
+  const GAP   = 5;
+  const ROWS  = 6;
+  const COLS  = 5;
+  const PAD   = 12; // 6px each side within container
+
+  const availH = container.clientHeight - PAD;
+  const availW = container.clientWidth  * 0.90; // 90% of container width
+
+  // Compute tile size that fits both dimensions with square tiles
+  const tileFromH = (availH - GAP * (ROWS - 1)) / ROWS;
+  const tileFromW = (availW - GAP * (COLS - 1)) / COLS;
+  const tile = Math.floor(Math.min(tileFromH, tileFromW, 62)); // max 62px tile
+
+  const w = tile * COLS + GAP * (COLS - 1);
+  const h = tile * ROWS + GAP * (ROWS - 1);
+
+  board.style.width  = w + 'px';
+  board.style.height = h + 'px';
+
+  // Tile font size
+  const fs = Math.max(14, Math.round(tile * 0.55));
+  board.querySelectorAll('.tile').forEach(t => t.style.fontSize = fs + 'px');
+}
+
+window.addEventListener('resize', sizeBoard);
+
+function buildBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  for (let r = 0; r < 6; r++) {
+    const row = document.createElement('div');
+    row.className = 'row'; row.id = `row-${r}`;
+    for (let c = 0; c < 5; c++) {
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.id = `tile-${r}-${c}`;
+      row.appendChild(tile);
+    }
+    board.appendChild(row);
+  }
+}
+
+function renderBoard() {
+  const dateStr = dateStrFromOffset(state.dayOffset);
+  const game    = state.games[dateStr];
+  if (!game) return;
+
+  // Clear all
+  for (let r = 0; r < 6; r++) {
+    for (let c = 0; c < 5; c++) {
+      const t = document.getElementById(`tile-${r}-${c}`);
+      t.textContent = '';
+      t.className   = 'tile';
+      t.removeAttribute('data-letter');
+    }
+  }
+
+  // Render submitted guesses
+  game.guesses.forEach((guess, r) => {
+    const result = scoreGuess(guess, state.wordOfDay);
+    for (let c = 0; c < 5; c++) {
+      const t = document.getElementById(`tile-${r}-${c}`);
+      t.textContent = guess[c].toUpperCase();
+      t.setAttribute('data-letter', guess[c]);
+      t.classList.add(result[c]);
+    }
+  });
+
+  // Render current input row (if game still playing)
+  if (game.status === 'playing') {
+    const curRow = game.guesses.length;
+    (currentInput || []).forEach((ch, c) => {
+      const t = document.getElementById(`tile-${curRow}-${c}`);
+      t.textContent = ch.toUpperCase();
+      t.setAttribute('data-letter', ch);
+    });
+  }
+}
+
+function renderKeyboard() {
+  const dateStr = dateStrFromOffset(state.dayOffset);
+  const game    = state.games[dateStr];
+  const keyState = {}; // best state per letter
+
+  if (game) {
+    game.guesses.forEach(guess => {
+      const result = scoreGuess(guess, state.wordOfDay);
+      for (let i = 0; i < 5; i++) {
+        const l = guess[i];
+        const priority = { correct: 3, present: 2, absent: 1 };
+        if (!keyState[l] || priority[result[i]] > priority[keyState[l]]) {
+          keyState[l] = result[i];
+        }
+      }
+    });
+  }
+
+  document.querySelectorAll('.key[data-letter]').forEach(k => {
+    const l = k.getAttribute('data-letter');
+    k.className = 'key' + (k.classList.contains('wide') ? ' wide' : '');
+    if (keyState[l]) k.classList.add(keyState[l]);
+  });
+}
+
+// ── Guess Scoring ─────────────────────────────────────────────────────────────
+function scoreGuess(guess, answer) {
+  const result   = Array(5).fill('absent');
+  const ansArr   = answer.split('');
+  const guessArr = guess.split('');
+  const used     = Array(5).fill(false);
+
+  // First pass: correct
+  for (let i = 0; i < 5; i++) {
+    if (guessArr[i] === ansArr[i]) {
+      result[i] = 'correct'; used[i] = true;
+    }
+  }
+  // Second pass: present
+  for (let i = 0; i < 5; i++) {
+    if (result[i] === 'correct') continue;
+    for (let j = 0; j < 5; j++) {
+      if (!used[j] && guessArr[i] === ansArr[j]) {
+        result[i] = 'present'; used[j] = true; break;
+      }
+    }
+  }
+  return result;
+}
+
+// ── Keyboard Build ────────────────────────────────────────────────────────────
+const KB_ROWS = [
+  ['q','w','e','r','t','y','u','i','o','p'],
+  ['a','s','d','f','g','h','j','k','l'],
+  ['Enter','z','x','c','v','b','n','m','⌫'],
+];
+
+function buildKeyboard() {
+  KB_ROWS.forEach((row, ri) => {
+    const rowEl = document.getElementById(`kb-row${ri+1}`);
+    rowEl.innerHTML = '';
+    row.forEach(key => {
+      const btn = document.createElement('button');
+      btn.className = 'key';
+      if (key === 'Enter' || key === '⌫') btn.classList.add('wide');
+      if (key === '⌫') {
+        // Use inline SVG for a clear, properly-sized backspace icon
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8L2 12l6 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>`;
+        btn.setAttribute('aria-label', 'Backspace');
+      } else {
+        btn.textContent = key;
+      }
+      if (key !== 'Enter' && key !== '⌫') btn.setAttribute('data-letter', key);
+      btn.addEventListener('click', () => handleKey(key));
+      rowEl.appendChild(btn);
+    });
+  });
+}
+
+// ── Input Handling ────────────────────────────────────────────────────────────
+let currentInput = [];
+
+document.addEventListener('keydown', e => {
+  // If the starter modal is open, let letter keys / Enter / Escape dismiss it and play
+  if (document.querySelector('#modal-starter.open')) {
+    if (e.key === 'Escape') {
+      document.getElementById('starter-skip').click();
+    } else if (/^[a-zA-Z]$/.test(e.key) || e.key === 'Enter' || e.key === 'Backspace') {
+      const key = e.key === 'Backspace' ? '⌫' : (/^[a-zA-Z]$/.test(e.key) ? e.key.toLowerCase() : 'Enter');
+      document.getElementById('starter-skip').click();
+      // Feed the key into the game after the modal closes
+      setTimeout(() => handleKey(key), 50);
+    }
+    return;
+  }
+
+  if (document.getElementById('screen-game').classList.contains('active') &&
+      !document.querySelector('.modal-overlay.open')) {
+    if (e.key === 'Enter')     handleKey('Enter');
+    else if (e.key === 'Backspace') handleKey('⌫');
+    else if (/^[a-zA-Z]$/.test(e.key)) handleKey(e.key.toLowerCase());
+  }
+});
+
+function handleKey(key) {
+  const dateStr = dateStrFromOffset(state.dayOffset);
+  const game    = state.games[dateStr];
+  if (!game || game.status !== 'playing') return;
+
+  if (key === '⌫') {
+    // Clear any invalid-word highlight on backspace
+    document.querySelectorAll('.tile.invalid-word').forEach(t => t.classList.remove('invalid-word'));
+    // If a starter word is active and this is the first row, don't allow
+    // backspacing into (or past) the locked starter word
+    const lockedLen = (game.guesses.length === 0 && state.starterWord)
+      ? state.starterWord.length : 0;
+    if (currentInput.length > lockedLen) {
+      currentInput.pop();
+      renderBoard();
+    }
+    return;
+  }
+
+  if (key === 'Enter') {
+    submitGuess(dateStr, game);
+    return;
+  }
+
+  if (/^[a-z]$/.test(key) && currentInput.length < 5) {
+    currentInput.push(key);
+    // pop animation
+    const t = document.getElementById(`tile-${game.guesses.length}-${currentInput.length - 1}`);
+    t.classList.remove('pop');
+    void t.offsetWidth;
+    t.classList.add('pop');
+    renderBoard();
+    // Real-time validation: after 5th letter, immediately show if word isn't valid
+    if (currentInput.length === 5) {
+      const typed = currentInput.join('');
+      if (!isValidWord(typed)) {
+        // Brief shake + invalid tint so user knows before pressing Enter
+        setTimeout(() => {
+          const row = document.getElementById(`row-${game.guesses.length}`);
+          if (row) {
+            row.querySelectorAll('.tile').forEach(tile => {
+              tile.classList.add('invalid-word');
+            });
+          }
+        }, 80);
+      }
+    }
+  }
+  // Clear invalid-word highlight as soon as the user edits the word
+  if (key !== 'Enter') {
+    document.querySelectorAll('.tile.invalid-word').forEach(t => t.classList.remove('invalid-word'));
+  }
+}
+
+async function submitGuess(dateStr, game) {
+  if (!state.wordOfDay) {
+    toast('Game not ready yet — try reloading');
+    return;
+  }
+  if (currentInput.length !== 5) {
+    shakeCurRow(game.guesses.length);
+    toast('Not enough letters');
+    return;
+  }
+
+  const word = currentInput.join('');
+
+  // If there's a starter word and this is the first guess, enforce it
+  if (state.starterWord && game.guesses.length === 0 && word !== state.starterWord) {
+    shakeCurRow(0);
+    toast(`First guess must be ${state.starterWord.toUpperCase()}`);
+    return;
+  }
+
+  // Validate word — check local list first, then dictionary API fallback
+  if (!isValidWord(word)) {
+    const submitBtn = null; // no button to disable for guesses
+    const apiValid = await isRealWord(word);
+    if (!apiValid) {
+      shakeCurRow(game.guesses.length);
+      toast('Not in word list');
+      return;
+    }
+    // Word passed API check — add to local set so it won't need checking again
+    VALID_WORDS.add(word);
+  }
+
+  const row = game.guesses.length;
+  game.guesses.push(word);
+  currentInput = [];
+
+  // Animate the row
+  await animateRow(row, word, state.wordOfDay);
+
+  // Check win/loss
+  const correct = (word === state.wordOfDay);
+  const outOfGuesses = game.guesses.length >= 6;
+
+  if (correct) {
+    game.status = 'won';
+    setTimeout(() => bounceCurRow(row), 50);
+    setTimeout(() => toast(winMsg(row + 1), 2500), 400);
+  } else if (outOfGuesses) {
+    game.status = 'lost';
+    setTimeout(() => toast(state.wordOfDay.toUpperCase(), 3000), 400);
+  }
+
+  renderKeyboard();
+  updateCompletedBanner();
+
+  // Save to Firestore
+  await saveResult(dateStr, game);
+
+  // Update stats if game over
+  if (game.status !== 'playing') {
+    await updateStats(game);
+    updateStreakBadge();
+    // Show stats after short delay
+    setTimeout(() => openModal('modal-stats'), 1600);
+    renderStatsModal(game);
+  }
+}
+
+function winMsg(guessNum) {
+  return ['Genius!','Magnificent!','Impressive!','Splendid!','Great!','Phew!'][guessNum - 1] || 'Nice!';
+}
+
+function shakeCurRow(rowIdx) {
+  const row = document.getElementById(`row-${rowIdx}`);
+  row.querySelectorAll('.tile').forEach(t => {
+    t.classList.remove('shake'); void t.offsetWidth; t.classList.add('shake');
+  });
+}
+
+function bounceCurRow(rowIdx) {
+  for (let c = 0; c < 5; c++) {
+    const t = document.getElementById(`tile-${rowIdx}-${c}`);
+    setTimeout(() => { t.classList.add('bounce'); }, c * 100);
+  }
+}
+
+async function animateRow(row, guess, answer) {
+  const result = scoreGuess(guess, answer);
+  const delay  = ms => new Promise(r => setTimeout(r, ms));
+
+  for (let c = 0; c < 5; c++) {
+    const t = document.getElementById(`tile-${row}-${c}`);
+    // Stagger each tile: 80ms apart so the wave feels smooth, not mechanical
+    if (c > 0) await delay(80);
+    t.classList.add('flip-in');
+    await delay(180);          // wait for flip-in to reach 90°
+    t.textContent = guess[c].toUpperCase();
+    t.classList.remove('flip-in');
+    t.classList.add(result[c], 'flip-out');
+    await delay(180);          // wait for flip-out to complete
+    t.classList.remove('flip-out');
+  }
+}
+
+// ── Completed Banner ──────────────────────────────────────────────────────────
+function updateCompletedBanner() {
+  const dateStr = dateStrFromOffset(state.dayOffset);
+  const game    = state.games[dateStr];
+  const banner  = document.getElementById('completed-banner');
+  const wasShown = banner.classList.contains('show');
+
+  if (!game || game.status === 'playing') {
+    banner.classList.remove('show');
+    if (wasShown) requestAnimationFrame(() => requestAnimationFrame(sizeBoard));
+    return;
+  }
+
+  banner.classList.add('show');
+  if (game.status === 'won') {
+    document.getElementById('completed-text').innerHTML =
+      `<strong>${state.wordOfDay.toUpperCase()}</strong> · ${game.guesses.length}/6 ✅`;
+  } else {
+    document.getElementById('completed-text').innerHTML =
+      `The word was <strong>${state.wordOfDay.toUpperCase()}</strong>`;
+  }
+  // Banner just appeared — re-measure and shrink board to fit
+  if (!wasShown) requestAnimationFrame(() => requestAnimationFrame(sizeBoard));
+}
+
+document.getElementById('btn-see-results').addEventListener('click', () => {
+  arenaOffset = state.dayOffset;
+  state.arenaDate = dateStrFromOffset(arenaOffset);
+  updateArenaDayBtns();
+  switchTab('arena');
+});
+
+// ── Day nav ───────────────────────────────────────────────────────────────────
+document.getElementById('btn-prev-day').addEventListener('click', () => {
+  if (state.dayOffset > -7) { currentInput = []; loadDay(state.dayOffset - 1); }
+});
+document.getElementById('btn-next-day').addEventListener('click', () => {
+  if (state.dayOffset < 0) { currentInput = []; loadDay(state.dayOffset + 1); }
+});
+
+// ── Firestore Save ────────────────────────────────────────────────────────────
+async function saveResult(dateStr, game) {
+  const name = state.user.displayName || state.user.email;
+  try {
+    await state.db.collection('wordle_results').doc(`${state.user.uid}_${dateStr}`).set({
+      uid:     state.user.uid,
+      name,
+      date:    dateStr,
+      guesses: game.guesses,
+      status:  game.status,
+      savedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch(e) { console.error('Save error', e); }
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const doc = await state.db.collection('wordle_stats').doc(state.user.uid).get();
+    if (doc.exists) state.stats = { ...state.stats, ...doc.data() };
+  } catch(e) {}
+  updateStreakBadge();
+}
+
+async function updateStats(game) {
+  const won = game.status === 'won';
+  state.stats.played++;
+  if (won) {
+    state.stats.wins++;
+    state.stats.streak++;
+    state.stats.maxStreak = Math.max(state.stats.maxStreak, state.stats.streak);
+    const g = game.guesses.length;
+    state.stats.dist[g] = (state.stats.dist[g] || 0) + 1;
+  } else {
+    state.stats.streak = 0;
+  }
+  try {
+    await state.db.collection('wordle_stats').doc(state.user.uid).set(state.stats);
+  } catch(e) {}
+}
+
+function updateStreakBadge() {
+  const badge = document.getElementById('streak-badge');
+  if (state.stats.streak > 0) {
+    badge.textContent = `🔥${state.stats.streak}`;
+    badge.style.display = 'inline';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderStatsModal(game) {
+  const s = state.stats;
+  document.getElementById('stat-played').textContent    = s.played;
+  document.getElementById('stat-winpct').textContent    = s.played ? Math.round(s.wins/s.played*100) : 0;
+  document.getElementById('stat-streak').textContent    = s.streak;
+  document.getElementById('stat-maxstreak').textContent = s.maxStreak;
+
+  const maxVal = Math.max(...Object.values(s.dist), 1);
+  const distEl = document.getElementById('guess-dist');
+  distEl.innerHTML = '';
+  for (let i = 1; i <= 6; i++) {
+    const v = s.dist[i] || 0;
+    const highlight = game?.status === 'won' && game.guesses.length === i;
+    const row = document.createElement('div');
+    row.className = 'dist-row';
+    const pct = Math.max(Math.round(v / maxVal * 100), v > 0 ? 8 : 4);
+    row.innerHTML = `<span>${i}</span><div class="dist-bar-wrap"><div class="dist-bar${highlight?' highlight':''}" style="width:${pct}%">${v}</div></div>`;
+    distEl.appendChild(row);
+  }
+}
+
+document.getElementById('btn-stats').addEventListener('click', () => {
+  renderStatsModal(state.games[dateStrFromOffset(state.dayOffset)]);
+  openModal('modal-stats');
+});
+
+// ── Share ─────────────────────────────────────────────────────────────────────
+document.getElementById('btn-share').addEventListener('click', () => {
+  const dateStr = dateStrFromOffset(state.dayOffset);
+  const game    = state.games[dateStr];
+  if (!game || game.status === 'playing') return;
+
+  const emojiMap = { correct: '🟩', present: '🟨', absent: '⬜' };
+  const rows = game.guesses.map(g =>
+    scoreGuess(g, state.wordOfDay).map(r => emojiMap[r]).join('')
+  ).join('\n');
+
+  const score  = game.status === 'won' ? `${game.guesses.length}/6` : 'X/6';
+  const text   = `Wordle ${friendlyDate(dateStr)}\n${score}\n\n${rows}`;
+
+  if (navigator.share) {
+    navigator.share({ text }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text).then(() => toast('Copied!')).catch(() => {});
+  }
+});
+
+// ── Arena ─────────────────────────────────────────────────────────────────────
+async function getWordForDate(dateStr) {
+  if (state.wordsByDate[dateStr]) return state.wordsByDate[dateStr];
+  try {
+    const resp = await fetch(`/.netlify/functions/get-word?date=${dateStr}`);
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.word && /^[a-z]{5}$/.test(data.word.toLowerCase())) {
+        state.wordsByDate[dateStr] = data.word.toLowerCase();
+        return state.wordsByDate[dateStr];
+      }
+    }
+  } catch(e) {}
+  return null;
+}
+
+async function renderArena() {
+  const dateStr = state.arenaDate || dateStrFromOffset(state.dayOffset);
+  document.getElementById('arena-date-lbl').textContent = friendlyDate(dateStr);
+
+  // Unsubscribe old listener
+  if (state.arenaUnsub) { state.arenaUnsub(); state.arenaUnsub = null; }
+
+  const myGame = state.games[dateStr];
+  const myDone = myGame && myGame.status !== 'playing';
+
+  // For past days: unlock if today's puzzle is done (or if this past day is itself done)
+  const todayStr    = dateStrFromOffset(0);
+  const todayGame   = state.games[todayStr];
+  const todayDone   = todayGame && todayGame.status !== 'playing';
+  const isPastDay   = dateStr < todayStr;
+  const canView     = myDone || (isPastDay && todayDone);
+
+  document.getElementById('arena-locked').style.display = canView ? 'none' : 'flex';
+  document.getElementById('arena-list').style.display   = canView ? 'flex' : 'none';
+
+  if (!canView) return;
+
+  // Make sure we have the answer word for this date
+  const wordForDate = await getWordForDate(dateStr);
+
+  // Real-time listener
+  state.arenaUnsub = state.db.collection('wordle_results')
+    .where('date', '==', dateStr)
+    .onSnapshot(snap => {
+      const results = snap.docs.map(d => d.data());
+      renderArenaList(results, dateStr, wordForDate);
+    });
+}
+
+function renderArenaList(results, dateStr, wordForDate) {
+  const list = document.getElementById('arena-list');
+  list.innerHTML = '';
+
+  if (results.length === 0) {
+    list.innerHTML = '<p style="color:#888;font-size:.9rem;padding-top:8px;text-align:center">No one else has played yet.</p>';
+    return;
+  }
+
+  // Sort: won first (fewest guesses), then lost
+  results.sort((a, b) => {
+    if (a.status === 'won' && b.status !== 'won') return -1;
+    if (b.status === 'won' && a.status !== 'won') return 1;
+    if (a.status === 'won' && b.status === 'won') return a.guesses.length - b.guesses.length;
+    return 0;
+  });
+
+  const answer = (wordForDate || '?????').toLowerCase();
+
+  results.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'arena-player';
+
+    const isMe = r.uid === state.user.uid;
+    const badge = r.status === 'won'
+      ? `<span class="arena-result-badge badge-win">${r.guesses.length}/6</span>`
+      : `<span class="arena-result-badge badge-loss">${r.guesses.length}/6 ✗</span>`;
+
+    div.innerHTML = `<div class="arena-player-name">
+      ${r.name}${isMe ? ' <span style="color:#888;font-size:.75rem">(you)</span>' : ''}
+      ${badge}
+    </div>`;
+
+    // Guesses: word label + coloured tiles per row
+    const guessesEl = document.createElement('div');
+    guessesEl.className = 'arena-guesses';
+    (r.guesses || []).forEach((g, i) => {
+      const result  = scoreGuess(g, answer);
+      const rowEl   = document.createElement('div');
+      rowEl.className = 'arena-guess-row';
+
+      // Word label
+      const wordLbl = document.createElement('span');
+      wordLbl.className = 'arena-guess-word';
+      wordLbl.textContent = g.toUpperCase();
+      rowEl.appendChild(wordLbl);
+
+      // Coloured tiles
+      const tilesEl = document.createElement('div');
+      tilesEl.className = 'mini-row';
+      result.forEach(res => {
+        const t = document.createElement('div');
+        t.className = `mini-tile ${res}`;
+        tilesEl.appendChild(t);
+      });
+      rowEl.appendChild(tilesEl);
+      guessesEl.appendChild(rowEl);
+    });
+    div.appendChild(guessesEl);
+    list.appendChild(div);
+  });
+}
+
+// ── Arena day navigation ──────────────────────────────────────────────────────
+let arenaOffset = 0; // separate from game day offset
+
+document.getElementById('arena-btn-prev').addEventListener('click', () => {
+  if (arenaOffset > -7) {
+    arenaOffset--;
+    state.arenaDate = dateStrFromOffset(arenaOffset);
+    updateArenaDayBtns();
+    renderArena();
+  }
+});
+document.getElementById('arena-btn-next').addEventListener('click', () => {
+  if (arenaOffset < 0) {
+    arenaOffset++;
+    state.arenaDate = dateStrFromOffset(arenaOffset);
+    updateArenaDayBtns();
+    renderArena();
+  }
+});
+function updateArenaDayBtns() {
+  document.getElementById('arena-btn-prev').disabled = (arenaOffset <= -7);
+  document.getElementById('arena-btn-next').disabled = (arenaOffset >= 0);
+}
+
+// ── Starter Word ──────────────────────────────────────────────────────────────
+// ── Starter Suggestions ──────────────────────────────────────────────────────
+function populateStarterSuggestions() {
+  const container = document.getElementById('starter-suggestions');
+  container.innerHTML = '';
+  // Pick 3 random common words from the answers list
+  const pool = typeof WORDLE_ANSWERS !== 'undefined' ? WORDLE_ANSWERS : [];
+  const picks = [];
+  const used  = new Set();
+  while (picks.length < 3 && pool.length > 0) {
+    const w = pool[Math.floor(Math.random() * pool.length)];
+    if (!used.has(w)) { picks.push(w); used.add(w); }
+  }
+  picks.forEach(word => {
+    const chip = document.createElement('button');
+    chip.className = 'starter-chip';
+    chip.textContent = word.toUpperCase();
+    chip.addEventListener('click', () => {
+      // Deselect others, select this
+      container.querySelectorAll('.starter-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      const inp = document.getElementById('starter-input');
+      inp.value = word.toUpperCase();
+      document.getElementById('starter-err').textContent = '';
+    });
+    container.appendChild(chip);
+  });
+}
+
+document.getElementById('starter-input').addEventListener('input', e => {
+  e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+  // Deselect chips if user types manually
+  document.querySelectorAll('.starter-chip').forEach(c => c.classList.remove('selected'));
+  document.getElementById('starter-err').textContent = '';
+});
+document.getElementById('starter-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('starter-submit').click();
+});
+
+async function isRealWord(word) {
+  // First check our local word list (fast)
+  if (isValidWord(word)) return true;
+  // Fallback: free dictionary API — if it has an entry, it's a real word
+  try {
+    const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`, { signal: AbortSignal.timeout(4000) });
+    return r.ok;
+  } catch(e) {
+    return true; // If API is unreachable, allow the word
+  }
+}
+
+document.getElementById('starter-submit').addEventListener('click', async () => {
+  const w = document.getElementById('starter-input').value.toLowerCase().trim();
+  const errEl = document.getElementById('starter-err');
+  const btn   = document.getElementById('starter-submit');
+  errEl.textContent = '';
+
+  if (w.length !== 5 || !/^[a-z]{5}$/.test(w)) { errEl.textContent = 'Must be exactly 5 letters.'; return; }
+
+  // Validate against dictionary
+  btn.textContent = 'Checking…'; btn.disabled = true;
+  const valid = await isRealWord(w);
+  btn.textContent = 'Set Starter Word'; btn.disabled = false;
+  if (!valid) { errEl.textContent = 'Not a valid English word.'; return; }
+
+  const dateStr = dateStrFromOffset(state.dayOffset);
+  try {
+    await state.db.collection('wordle_starters').doc(dateStr).set({
+      word:  w,
+      setBy: state.user.displayName || state.user.email,
+      date:  dateStr,
+      setAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    state.starterWord  = w;
+    state.starterSetBy = state.user.displayName || state.user.email;
+    VALID_WORDS.add(w); // ensure it passes guess validation for everyone
+    closeModal('modal-starter');
+    toast(`Starter word: ${w.toUpperCase()} — locked in for everyone!`, 2500);
+    // Auto-fill and auto-submit the starter word
+    currentInput = w.split('');
+    renderBoard();
+    setTimeout(() => submitGuess(dateStr, state.games[dateStr]), 500);
+  } catch(e) {
+    errEl.textContent = 'Failed to save — try again.';
+  }
+});
+
+document.getElementById('starter-skip').addEventListener('click', async () => {
+  // Close immediately so the user can start playing right away
+  state.starterWord  = null;
+  state.starterSetBy = 'skipped';
+  closeModal('modal-starter');
+  // Write to Firestore in the background so others don't get prompted
+  const dateStr = dateStrFromOffset(state.dayOffset);
+  try {
+    await state.db.collection('wordle_starters').doc(dateStr).set({
+      word: null, setBy: null, date: dateStr, skipped: true,
+      setAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch(e) {}
+});
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// ── Service Worker ────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+boot();
+</script>
+</body>
+</html>
