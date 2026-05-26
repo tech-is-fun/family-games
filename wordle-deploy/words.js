@@ -1158,3 +1158,4 @@ const WORDLE_VALID = [
 ];
 
 const VALID_WORDS = new Set([...WORDLE_ANSWERS, ...WORDLE_VALID]);
+function isValidWord(word) { return VALID_WORDS.has(word.toLowerCase()); }
