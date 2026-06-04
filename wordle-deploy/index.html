@@ -870,22 +870,14 @@ async function loadDay(offset) {
   const myGame = state.games[dateStr];
   const alreadyGuessed = myGame && myGame.guesses.length > 0;
 
-  if (!alreadyGuessed) {
-    if (state.starterWord) {
-      // Someone already set a starter word — notify, auto-fill, and auto-submit
-      toast(`Starter word: ${state.starterWord.toUpperCase()} (set by ${state.starterSetBy})`, 3000);
-      currentInput = state.starterWord.split('');
-      renderBoard();
-      if (state.wordOfDay) setTimeout(() => submitGuess(dateStr, myGame), 500);
-    } else if (offset === 0 && state.starterSetBy === null) {
-      // Today only: no one has set anything yet — check if anyone has played
-      const noOnePlayed = !(await hasAnyonePlayed(dateStr));
-      if (noOnePlayed) {
-        populateStarterSuggestions();
-        openModal('modal-starter');
-      }
-    }
-    // if starterSetBy = 'skipped', do nothing
+  if (!alreadyGuessed && state.starterWord) {
+    const setter = state.starterSetBy === 'auto'
+      ? 'auto-selected'
+      : `set by ${state.starterSetBy}`;
+    toast(`Starter: ${state.starterWord.toUpperCase()} (${setter})`, 3000);
+    currentInput = state.starterWord.split('');
+    renderBoard();
+    if (state.wordOfDay) setTimeout(() => submitGuess(dateStr, myGame), 500);
   }
 }
 
@@ -897,6 +889,19 @@ async function hasAnyonePlayed(dateStr) {
   } catch(e) { return false; }
 }
 
+// Pick a deterministic starter word for a given date (different rotation from the answer)
+function autoStarterWord(dateStr) {
+  const pool = typeof WORDLE_ANSWERS !== 'undefined' ? WORDLE_ANSWERS : [];
+  if (!pool.length) return null;
+  const epoch = new Date('2024-01-01T00:00:00Z');
+  const d     = new Date(dateStr + 'T00:00:00Z');
+  const day   = Math.round((d - epoch) / 86400000);
+  const idx   = ((day * 7 + 137) % pool.length + pool.length) % pool.length;
+  const word  = pool[idx];
+  // Don't accidentally use the day's answer as the starter
+  return (state.wordOfDay && word === state.wordOfDay) ? pool[(idx + 1) % pool.length] : word;
+}
+
 async function loadStarterWord(dateStr) {
   state.starterWord  = null;
   state.starterSetBy = null;
@@ -904,13 +909,31 @@ async function loadStarterWord(dateStr) {
     const doc = await state.db.collection('wordle_starters').doc(dateStr).get();
     if (doc.exists) {
       const d = doc.data();
+      if (d.skipped) {
+        state.starterSetBy = 'skipped';
+        return; // family chose no starter word today
+      }
       state.starterWord  = d.word  || null;
       state.starterSetBy = d.setBy || null;
-      // Ensure the starter word is always accepted as a valid guess,
-      // even if it's not in the local word list
       if (state.starterWord) VALID_WORDS.add(state.starterWord);
+      return;
     }
   } catch(e) {}
+
+  // Nothing in Firestore yet — auto-pick a word so everyone always has one
+  const autoWord = autoStarterWord(dateStr);
+  if (autoWord) {
+    state.starterWord  = autoWord;
+    state.starterSetBy = 'auto';
+    VALID_WORDS.add(autoWord);
+    // Persist so all family members get the exact same word
+    try {
+      state.db.collection('wordle_starters').doc(dateStr).set({
+        word: autoWord, setBy: 'auto', date: dateStr,
+        setAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch(e) {}
+  }
 }
 
 async function loadGameState(dateStr) {
