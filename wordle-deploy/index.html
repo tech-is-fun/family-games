@@ -870,14 +870,20 @@ async function loadDay(offset) {
   const myGame = state.games[dateStr];
   const alreadyGuessed = myGame && myGame.guesses.length > 0;
 
-  if (!alreadyGuessed && state.starterWord) {
-    const setter = state.starterSetBy === 'auto'
-      ? 'auto-selected'
-      : `set by ${state.starterSetBy}`;
-    toast(`Starter: ${state.starterWord.toUpperCase()} (${setter})`, 3000);
-    currentInput = state.starterWord.split('');
-    renderBoard();
-    if (state.wordOfDay) setTimeout(() => submitGuess(dateStr, myGame), 500);
+  if (!alreadyGuessed) {
+    if (state.starterWord) {
+      toast(`Starter: ${state.starterWord.toUpperCase()} (set by ${state.starterSetBy})`, 3000);
+      currentInput = state.starterWord.split('');
+      renderBoard();
+      if (state.wordOfDay) setTimeout(() => submitGuess(dateStr, myGame), 500);
+    } else if (offset === 0 && state.starterSetBy === null) {
+      // Today only — let the first player pick a starter word
+      const noOnePlayed = !(await hasAnyonePlayed(dateStr));
+      if (noOnePlayed) {
+        populateStarterSuggestions();
+        openModal('modal-starter');
+      }
+    }
   }
 }
 
@@ -889,19 +895,6 @@ async function hasAnyonePlayed(dateStr) {
   } catch(e) { return false; }
 }
 
-// Pick a deterministic starter word for a given date (different rotation from the answer)
-function autoStarterWord(dateStr) {
-  const pool = typeof WORDLE_ANSWERS !== 'undefined' ? WORDLE_ANSWERS : [];
-  if (!pool.length) return null;
-  const epoch = new Date('2024-01-01T00:00:00Z');
-  const d     = new Date(dateStr + 'T00:00:00Z');
-  const day   = Math.round((d - epoch) / 86400000);
-  const idx   = ((day * 7 + 137) % pool.length + pool.length) % pool.length;
-  const word  = pool[idx];
-  // Don't accidentally use the day's answer as the starter
-  return (state.wordOfDay && word === state.wordOfDay) ? pool[(idx + 1) % pool.length] : word;
-}
-
 async function loadStarterWord(dateStr) {
   state.starterWord  = null;
   state.starterSetBy = null;
@@ -909,30 +902,17 @@ async function loadStarterWord(dateStr) {
     const doc = await state.db.collection('wordle_starters').doc(dateStr).get();
     if (doc.exists) {
       const d = doc.data();
-      if (d.word) {
+      if (d.skipped) {
+        state.starterSetBy = 'skipped';
+      } else if (d.word && d.setBy && d.setBy !== 'auto') {
+        // Only trust words explicitly set by a real user (not auto-generated)
         state.starterWord  = d.word;
-        state.starterSetBy = d.setBy || null;
+        state.starterSetBy = d.setBy;
         VALID_WORDS.add(d.word);
-        return;
       }
-      // Document exists but has no valid word (skipped or empty) — fall through to auto-generate
+      // if setBy === 'auto' or word is missing, leave as null so first user can set it
     }
   } catch(e) {}
-
-  // Nothing in Firestore yet — auto-pick a word so everyone always has one
-  const autoWord = autoStarterWord(dateStr);
-  if (autoWord) {
-    state.starterWord  = autoWord;
-    state.starterSetBy = 'auto';
-    VALID_WORDS.add(autoWord);
-    // Persist so all family members get the exact same word
-    try {
-      state.db.collection('wordle_starters').doc(dateStr).set({
-        word: autoWord, setBy: 'auto', date: dateStr,
-        setAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    } catch(e) {}
-  }
 }
 
 async function loadGameState(dateStr) {
@@ -1121,15 +1101,11 @@ function buildKeyboard() {
 let currentInput = [];
 
 document.addEventListener('keydown', e => {
-  // If the starter modal is open, let letter keys / Enter / Escape dismiss it and play
+  // If the starter modal is open, only handle Escape (to skip/dismiss)
+  // Let all other keys fall through naturally to the modal's own inputs
   if (document.querySelector('#modal-starter.open')) {
     if (e.key === 'Escape') {
       document.getElementById('starter-skip').click();
-    } else if (/^[a-zA-Z]$/.test(e.key) || e.key === 'Enter' || e.key === 'Backspace') {
-      const key = e.key === 'Backspace' ? '⌫' : (/^[a-zA-Z]$/.test(e.key) ? e.key.toLowerCase() : 'Enter');
-      document.getElementById('starter-skip').click();
-      // Feed the key into the game after the modal closes
-      setTimeout(() => handleKey(key), 50);
     }
     return;
   }
