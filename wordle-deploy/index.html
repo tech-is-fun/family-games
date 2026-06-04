@@ -909,17 +909,13 @@ async function loadStarterWord(dateStr) {
     const doc = await state.db.collection('wordle_starters').doc(dateStr).get();
     if (doc.exists) {
       const d = doc.data();
-      if (d.skipped) {
-        state.starterSetBy = 'skipped';
-        return; // family chose no starter word today
-      }
       if (d.word) {
         state.starterWord  = d.word;
         state.starterSetBy = d.setBy || null;
         VALID_WORDS.add(d.word);
         return;
       }
-      // Document exists but has no word — fall through to auto-generate
+      // Document exists but has no valid word (skipped or empty) — fall through to auto-generate
     }
   } catch(e) {}
 
