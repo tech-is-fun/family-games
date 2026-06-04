@@ -913,10 +913,13 @@ async function loadStarterWord(dateStr) {
         state.starterSetBy = 'skipped';
         return; // family chose no starter word today
       }
-      state.starterWord  = d.word  || null;
-      state.starterSetBy = d.setBy || null;
-      if (state.starterWord) VALID_WORDS.add(state.starterWord);
-      return;
+      if (d.word) {
+        state.starterWord  = d.word;
+        state.starterSetBy = d.setBy || null;
+        VALID_WORDS.add(d.word);
+        return;
+      }
+      // Document exists but has no word — fall through to auto-generate
     }
   } catch(e) {}
 
